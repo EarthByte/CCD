@@ -1,0 +1,23 @@
+cff-version: 1.2.0
+title: "CCD — a global carbonate compensation depth record and its solid-Earth carbon-cycle test"
+message: "If you use this software or the derived CCD record, please cite both the paper and this repository."
+type: software
+authors:
+  - family-names: Dutkiewicz
+    given-names: Adriana
+    affiliation: "EarthByte Group, School of Geosciences, The University of Sydney"
+  - family-names: Müller
+    given-names: R. Dietmar
+    affiliation: "EarthByte Group, School of Geosciences, The University of Sydney"
+repository-code: "https://github.com/EarthByte/CCD"
+license: MIT
+preferred-citation:
+  type: article
+  title: "Globally coherent Cenozoic deepening of the carbonate compensation depth tests surface control of deep-ocean carbonate chemistry"
+  authors:
+    - family-names: Dutkiewicz
+      given-names: Adriana
+    - family-names: Müller
+      given-names: R. Dietmar
+  journal: Geology
+  year: 2026

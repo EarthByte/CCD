@@ -1,0 +1,16 @@
+# Core numeric pipeline (steps 0, 2–6). Install with:  pip install -r requirements.txt
+numpy>=1.24
+pandas>=2.0
+scipy>=1.10
+matplotlib>=3.7
+openpyxl>=3.1        # reading ccds_and_oceanbasin_fractions.xlsx
+
+# Step-8 ground-truth (steps/step8_ground_truth/ground_truth_carbonate_thickness.py)
+xarray>=2023.1        # read the present-day carbonate-thickness NetCDF grids
+netcdf4>=1.6          # NetCDF backend for xarray
+python-docx>=0.8      # read Table_carbonate_thickness.docx
+
+# Figures needing GMT (steps/plots/*.py and the ground-truth map). GMT must also
+# be installed; easiest via conda:
+#   conda install -c conda-forge pygmt
+# pygmt>=0.10

@@ -1,0 +1,18 @@
+Creative Commons Attribution 4.0 International (CC BY 4.0)
+
+Copyright (c) 2026 A. Dutkiewicz and R. D. Müller, EarthByte Group,
+School of Geosciences, The University of Sydney
+
+This licence covers the non-software content of this repository: the figures in
+figures/, the derived data tables and result files under steps/*/outputs/ and
+steps/*/output/, and the reconstructed global CCD record
+(figures/CCD_hybrid_DM2026.txt).
+
+You are free to share and adapt this material for any purpose, including
+commercially, provided you give appropriate credit, provide a link to the
+licence, and indicate if changes were made.
+
+Full licence text: https://creativecommons.org/licenses/by/4.0/legalcode
+
+Third-party inputs redistributed in data/ retain the licences of their original
+sources; see the paper's reference list for provenance.

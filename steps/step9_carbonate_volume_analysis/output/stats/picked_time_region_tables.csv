@@ -1,0 +1,14 @@
+# Top-3 (basin, lat-band) cells ranked by mean |DM2026 - BW1991| at each picked time.
+time_Ma,rank,basin,lat_band_centre_deg,mean_abs_m
+0,1,Pacific,+65,19.7495
+0,2,Pacific,+5,18.5595
+0,3,Southern,-55,18.5357
+28,1,Indian,+65,31.5095
+28,2,Pacific,+65,22.3872
+28,3,Pacific,+55,18.8901
+62,1,Arctic,+65,15.8290
+62,2,Pacific,-15,11.7516
+62,3,Pacific,-25,10.7687
+108,1,Pacific,-35,14.1737
+108,2,Indian,-15,13.5714
+108,3,Pacific,-25,13.4487

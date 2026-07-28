@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+
+# OS
+.DS_Store
+
+# Rendered animations and their frames (archived on Zenodo)
+figures/videos/
+
+# Large inputs and intermediates archived on Zenodo (see README, Data availability)
+**/input_grids/
+**/plate-model-repo/
+**/_cloud_stage/
+**/Grids/
+**/carbonate_sed_thickness_DM2026/
+**/carbonate_sed_thickness_min_DM2026/
+**/carbonate_sed_thickness_max_DM2026/
+**/Alfonso_etal_2024_DM26/Outputs/*.zip
+**/Alfonso_etal_2024_DM26/Outputs/**/*.nc
+**/Alfonso_etal_2024_DM26/Outputs/**/*.svg
+**/utils/Lookuptables/
+*.log
+
+# macOS archive cruft and downloaded/cached third-party data
+__MACOSX/
+._*
+**/natural_earth/
+**/plate-model-cache/

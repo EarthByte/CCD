@@ -1,0 +1,125 @@
+#!/usr/bin/env python3
+"""
+Attribution (idea 1) + carbonate-budget closure (idea 2) analysis.
+
+Inputs (staged):
+  CCD hybrid curve      : <figures>/CCD_hybrid_DM2026.txt  (age, CCD, min, max; CCD negative-up)
+  Sea level (long-term) : step3 sea_level_quantile_envelope_0-205Ma.txt
+  Degassing components  : 05_atmospheric_influx_all_sources.csv (Mt C/yr, per component, min/mean/max)
+
+Conventions:
+  depth = -CCD  (positive down; larger = deeper = higher deep-ocean saturation)
+  Primary independent window = 0-52 Ma (CCD is data-driven there; degassing is
+  independent of how the CCD was built). 0-170 Ma reported for context only.
+"""
+from pathlib import Path
+import numpy as np, pandas as pd
+from scipy import stats
+import matplotlib; matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+
+# ---- path resolution -------------------------------------------------------
+# Works both in the working tree (this script in Paper/, the workflow in a
+# sibling CCD_workflow_clean/) and in the public repo (this script in
+# figure_scripts/, the workflow at the repo root). CW = workflow root,
+# FIGDIR = where figures and the small figure-input curves live.
+_HERE = Path(__file__).resolve().parent
+def _workflow_root():
+    for _p in (_HERE.parent / "CCD_workflow_clean", _HERE.parent, _HERE):
+        if (_p / "steps").is_dir() and (_p / "ccdworkflow").is_dir():
+            return _p
+    raise SystemExit("cannot locate the CCD workflow root (expected steps/ + ccdworkflow/)")
+CW = _workflow_root()
+FIGDIR = _HERE / "Figures" if (_HERE / "Figures").is_dir() else CW / "figures"
+FIGDIR.mkdir(parents=True, exist_ok=True)
+SL  = CW / "steps/step4_sealevel_envelope/outputs/sea_level_quantile_envelope_0-205Ma.txt"
+# degassing components from the consolidated headless CO2 notebooks (Notebook 05):
+ATM = CW / "steps/step10_carbon_cycle_degassing/Alfonso_etal_2024_DM26/Outputs/Notebook05/csv/05_atmospheric_influx_all_sources.csv"
+
+# ---------- load ----------
+ccd = pd.read_csv(FIGDIR / "CCD_hybrid_DM2026.txt", sep=r"\s+", header=None,
+                  names=["age","ccd","cmin","cmax"]).dropna()
+ccd = ccd[ccd["age"]<=170].copy()
+ccd["depth"] = -ccd["ccd"]                      # positive down
+
+sl = pd.read_csv(SL, sep=r"\s+|\t+", engine="python", comment="#", header=None, names=["age","sl"]).dropna()
+
+atm = pd.read_csv(ATM)
+atm = atm.rename(columns={"Age (Ma)":"age"})
+
+grid = np.arange(0,171,1.0)
+def onto(a, v):
+    a=np.asarray(a,float); v=np.asarray(v,float); o=np.argsort(a); a,v=a[o],v[o]
+    keep=np.concatenate([[True],np.diff(a)>0]); return np.interp(grid,a[keep],v[keep])
+
+D = pd.DataFrame({"age":grid})
+D["depth"]  = onto(ccd["age"], ccd["depth"])
+D["sl"]     = onto(sl["age"], sl["sl"])
+comp = {
+ "MOR_ridge":       "ridge_outflux_mean",
+ "arc_subduction":  "subduction_outflux_mean",
+ "rift":            "rift_outflux_biased_mean",
+ "carb_platform":   "carbonate_platform_outflux_mean",
+ "intraplate":      "intraplate_volcanism_outflux_mean",
+ "gross_outflux":   "gross_atmospheric_outflux_biased_rift_mean",
+ "net_influx":      "net_atmospheric_influx_biased_and_sed_mean",
+ "sink_plate_sed":  "gross_upper_plate_influx_with_sed_mean",
+}
+for k,c in comp.items():
+    D[k]=onto(atm["age"], atm[c]) if c in atm.columns else np.nan
+
+# ---------- AR1-adjusted correlation ----------
+def ar1_corr(x,y):
+    m=np.isfinite(x)&np.isfinite(y); x,y=x[m],y[m]; n=len(x)
+    if n<6: return np.nan,np.nan,np.nan
+    r,_=stats.pearsonr(x,y)
+    r1x=stats.pearsonr(x[:-1],x[1:]).statistic; r1y=stats.pearsonr(y[:-1],y[1:]).statistic
+    neff=float(np.clip(n*(1-r1x*r1y)/(1+r1x*r1y),3,n))
+    t=r*np.sqrt((neff-2)/max(1e-12,1-r*r)); p=2*stats.t.sf(abs(t),df=neff-2)
+    return float(r),neff,float(p)
+
+def lagscan(forcing_full, resp_full, wmask, amax=15):
+    # positive lag = forcing leads response by 'lag' Myr; correlate within wmask
+    best=None
+    for lag in range(-amax,amax+1):
+        f=np.interp(grid, grid+lag, forcing_full, left=np.nan, right=np.nan)
+        r,neff,p=ar1_corr(f[wmask],resp_full[wmask])
+        if r==r and (best is None or abs(r)>abs(best[1])):
+            best=(lag,r,neff,p)
+    return best if best else (0,np.nan,0,np.nan)
+
+for label, mask in [("OBSERVED 0-52 Ma", (D["age"]<=52).to_numpy()),
+                    ("FULL 0-170 Ma (context; >52 model)", (D["age"]<=170).to_numpy())]:
+    depthF=D["depth"].to_numpy(); ddepthF=np.gradient(depthF)
+    depth=depthF[mask]; ddepth=ddepthF[mask]
+    print(f"\n================ {label}  (n={int(mask.sum())}) ================")
+    print(f"{'series':16s} {'r(CCD)':>11s} {'lag*':>5s} {'r@lag':>7s} {'pAR1':>7s} | {'r(dCCD)':>8s}")
+    for k in ["sl","MOR_ridge","arc_subduction","rift","carb_platform","gross_outflux","net_influx","sink_plate_sed"]:
+        sF=D[k].to_numpy()
+        r0,_,p0=ar1_corr(sF[mask],depth)
+        lag,rl,_,pl=lagscan(sF,depthF,mask)
+        rd,_,_=ar1_corr(np.gradient(sF)[mask],ddepth)
+        print(f"{k:16s} {r0:11.2f} {lag:5d} {rl:7.2f} {p0:7.3f} | {rd:8.2f}")
+
+# ---------- multiple regression attribution (0-52, standardized) ----------
+sub=D[D["age"]<=52].copy()
+def z(a): a=np.asarray(a,float); return (a-a.mean())/a.std()
+Y=z(sub["depth"])
+preds={"sea_level":z(sub["sl"]), "total_degassing":z(sub["gross_outflux"]), "biological_sink":z(sub["sink_plate_sed"])}
+X=np.column_stack([preds[k] for k in preds]); X=np.column_stack([np.ones(len(Y)),X])
+beta,_,_,_=np.linalg.lstsq(X,Y,rcond=None)
+yhat=X@beta; R2=1-np.sum((Y-yhat)**2)/np.sum((Y-Y.mean())**2)
+print(f"\n================ MULTIPLE REGRESSION (0-52 Ma, standardized) ================")
+print(f"CCD ~ sea_level + total_degassing + biological_sink   R2_full={R2:.2f}")
+for name,b in zip(["intercept"]+list(preds),beta):
+    print(f"  {name:16s} std beta = {b:+.2f}")
+# incremental R2 (drop-one)
+for drop in preds:
+    keep=[k for k in preds if k!=drop]
+    Xk=np.column_stack([np.ones(len(Y))]+[preds[k] for k in keep])
+    bk,_,_,_=np.linalg.lstsq(Xk,Y,rcond=None); yk=Xk@bk
+    R2k=1-np.sum((Y-yk)**2)/np.sum((Y-Y.mean())**2)
+    print(f"  incremental R2 of {drop:16s} = {R2-R2k:+.2f}")
+
+D.to_csv(_HERE / "attribution_matched_series.csv", index=False)
+print("\nsaved matched series ->", _HERE / "attribution_matched_series.csv")

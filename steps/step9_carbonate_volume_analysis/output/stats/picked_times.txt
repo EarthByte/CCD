@@ -1,0 +1,8 @@
+# Picked times for the maximum-disagreement analysis.
+# Method: greedy NMS on per-time mean(|DM2026 - BW1991|),
+# exclusion radius = 25 Myr, n_picks = 4.
+time_Ma,mean_abs_m,max_abs_m,iqr_m
+0,12.5198,113.5190,6.5999
+28,10.5441,113.5086,8.1650
+62,7.3255,71.8257,6.4917
+108,8.1823,64.7264,7.8965
