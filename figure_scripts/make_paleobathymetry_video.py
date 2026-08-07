@@ -51,7 +51,7 @@ def _bathy_cmap():
         import matplotlib.pyplot as plt
         print("  [note] cmcrameri not found; falling back to 'YlGnBu_r'")
         cmap = plt.get_cmap("YlGnBu_r").copy()
-    cmap.set_bad("0.784")     # 200/200/200, matches template NAN_COLOR
+    cmap.set_bad(V.CONTINENT_GRAY)   # NaN = exactly the continent grey (0.74)
     return cmap
 
 def main():

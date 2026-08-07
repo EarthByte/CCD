@@ -20,7 +20,7 @@ FIGDIR.mkdir(parents=True, exist_ok=True)
 STEP9 = CW/"steps/step9_carbonate_volume_analysis"
 STAGE = STEP9/"_cloud_stage"                       # carb_thick_*Ma.nc
 MODEL = STEP9/"input/Alfonso_etal_2024_modClennettMuller"
-CPT   = CW/"data/carbonate_thickness_blue_orange_red.cpt"
+CPT   = CW/"data/carbonate_thickness_blue_orange_red_pale.cpt"
 CMASK = CW/"steps/step10_carbon_cycle_degassing/Alfonso_etal_2024_DM26/Grids/InputGrids/ContinentalMasks"
 OUT   = FIGDIR
 for _p in (STAGE, MODEL, CPT):
