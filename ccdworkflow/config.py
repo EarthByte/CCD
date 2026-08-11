@@ -22,6 +22,7 @@ Each step folder holds its own ``outputs/`` (csv + figures/).
 
 from __future__ import annotations
 
+import os
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -37,7 +38,28 @@ REFERENCE_CCD = DATA / "reference_ccd"          # published reference CCD curves
 CCD_FRACTIONS_XLSX = DATA / "ccds_and_oceanbasin_fractions.xlsx"
 
 STEPS = REPO_ROOT / "steps"
-FIGURES = REPO_ROOT / "Figures"                 # collected paper-figure set (PNG + PDF)
+FIGURES = REPO_ROOT / "Figures"                 # collected diagnostic figure set (PNG + PDF)
+
+
+def _paper_figures_dir() -> Path | None:
+    """Folder holding the paper's numbered figures, or None if it cannot be found.
+
+    Figure 1 is the only paper figure produced by a pipeline step rather than by a
+    make_fig*.py script, so step 3 writes a copy straight into it. Two layouts are
+    supported: the working tree (this repo sits next to Paper/) and the public repo
+    (this repo IS the repo root and the figures live in figures/). Override with
+    the CCD_PAPER_FIGURES environment variable.
+    """
+    env = os.environ.get("CCD_PAPER_FIGURES")
+    if env:
+        return Path(env).expanduser()
+    for cand in (REPO_ROOT.parent / "Paper" / "Figures", REPO_ROOT / "figures"):
+        if cand.is_dir():
+            return cand
+    return None
+
+
+PAPER_FIGURES = _paper_figures_dir()
 
 # Per-step output directories (each inside its step folder: steps/<step>/outputs)
 STEP1_DIR = STEPS / "step1_regional_ccd_resampling" / "outputs"     # resampled regional CCDs

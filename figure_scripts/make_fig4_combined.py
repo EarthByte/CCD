@@ -36,15 +36,22 @@ axa=fig.add_subplot(gs[0,:]); axb1=fig.add_subplot(gs[1,0]); axb2=fig.add_subplo
 axa.plot(age,ccd,color="black",lw=2.4,label="Global CCD (this study)")
 axa.set_xlim(170,0); axa.set_ylabel("CCD (m)"); axa.set_xlabel("Age (Ma)"); axa.set_ylim(-5100,-2600)
 ax2=axa.twinx()
-ax2.plot(age,D["arc_subduction"],color="#d1495b",lw=1.6,label="Arc (subduction)")
-ax2.plot(age,D["MOR_ridge"],color="#0072b2",lw=1.6,label="Mid-ocean ridge")
-ax2.plot(age,D["rift"],color="#9467bd",lw=1.2,label="Rift")
-ax2.plot(age,D["carb_platform"],color="#8c564b",lw=1.2,label="Carbonate platform")
+ax2.plot(age,D["arc_subduction"],color="#d1495b",lw=1.6,label="Arc outgassing (pelagic carbonates)")
+ax2.plot(age,D["MOR_ridge"],color="#0072b2",lw=1.6,label="Mid-ocean ridge outgassing")
+ax2.plot(age,D["rift"],color="#9467bd",lw=1.2,label="Rift outgassing")
+ax2.plot(age,D["carb_platform"],color="#8c564b",lw=1.2,label="Arc outgassing (carbonate platforms)")
 ax2.set_ylabel("CO$_2$ outflux (Mt C yr$^{-1}$)")
 for lbl,a in events.items():
     axa.axvline(a,color="0.7",lw=0.8,ls=":"); axa.text(a,-2620,lbl,ha="center",va="top",fontsize=9.5,color="0.35")
 l1,la1=axa.get_legend_handles_labels(); l2,la2=ax2.get_legend_handles_labels()
-axa.legend(l1+l2,la1+la2,fontsize=11,loc="upper right",bbox_to_anchor=(0.995,0.88),ncol=1,frameon=True,facecolor="white",framealpha=0.72,edgecolor="0.5").set_zorder(20)
+# Legend on the LEFT, with the top of the box at -3450 m on the CCD axis. Set by
+# depth rather than by axes fraction so it stays put if the y-limits change.
+_LEG_TOP_M = -3450.0
+_y0,_y1 = axa.get_ylim()
+axa.legend(l1+l2,la1+la2,fontsize=10,loc="upper left",
+           bbox_to_anchor=(0.012,(_LEG_TOP_M-_y0)/(_y1-_y0)),
+           ncol=1,frameon=True,facecolor="white",framealpha=0.72,
+           edgecolor="0.5").set_zorder(20)
 
 # (b) attribution
 def z(a): a=np.asarray(a,float); return (a-a.mean())/a.std()
@@ -76,8 +83,7 @@ axb2.set_xlabel("Lag (Myr; + = forcing leads CCD)"); axb2.set_ylabel("Correlatio
 axb2.legend(fontsize=11,frameon=False,ncol=1,loc="center left",bbox_to_anchor=(0.0,0.52))
 
 def plabel(ax,t):
-    ax.text(-0.06,1.05,t,transform=ax.transAxes,fontsize=14,fontweight="bold",va="bottom",ha="right",
-            bbox=dict(boxstyle="square,pad=0.35",fc="white",ec="black",lw=1.1))
+    ax.text(-0.06,1.05,t,transform=ax.transAxes,fontsize=14,fontweight="bold",va="bottom",ha="right")
 plabel(axa,"a"); plabel(axb1,"b"); plabel(axb2,"c")
 
 for ext in ("png","pdf"): fig.savefig(f"{FIG}/Fig4_combined.{ext}",dpi=300,bbox_inches="tight")

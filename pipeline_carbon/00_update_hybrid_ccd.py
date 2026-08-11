@@ -33,7 +33,15 @@ HERE = Path(__file__).resolve().parent
 CLEAN_REPO = Path(os.environ.get("CLEAN_REPO", HERE.parent))    # CCD_workflow_clean
 PROJECT = Path(os.environ.get("PROJECT_ROOT", CLEAN_REPO.parent))  # Dutkiewicz_Muller_CCD
 STEPS_ROOT = Path(os.environ.get("STEPS_ROOT", CLEAN_REPO / "steps"))
-HYBRID_SRC = CLEAN_REPO / "outputs" / "step6_hybrid" / "hybrid_ccd_obs_pred_combined.txt"
+# Step 7 writes into its own steps/ folder; the old outputs/step6_hybrid/ path is
+# from the pre-renumbering layout and no longer exists, which silently left
+# Paper/Figures/CCD_hybrid_DM2026.txt stale. Fall back to the old path only if
+# someone is running an archived tree.
+HYBRID_SRC = STEPS_ROOT / "step7_planktogenic_hybrid_ccd" / "outputs" / "hybrid_ccd_obs_pred_combined.txt"
+if not HYBRID_SRC.exists():
+    _legacy = CLEAN_REPO / "outputs" / "step6_hybrid" / "hybrid_ccd_obs_pred_combined.txt"
+    if _legacy.exists():
+        HYBRID_SRC = _legacy
 
 CONSUMERS = [
     STEPS_ROOT / "step8_carbonate_sediment_thickness" / "input_data" / "CCD_sl_hybrid_2026.txt",

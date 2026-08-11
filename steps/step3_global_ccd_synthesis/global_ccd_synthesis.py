@@ -8,8 +8,20 @@ CCD curve over 0–52 Ma, and quantify the *inter-basin dispersion* envelope
 
 At each 1 Myr timestep the global CCD is the weighted mean of the basins that have
 data, weighted by their ocean-area fractions (columns 7/8/9), renormalised over the
-basins present. The dispersion is ``sigma(t) = sqrt(sum_i w_i (CCD_i - mean)^2)``,
-defined only where >= 2 basins contribute.
+basins present. The plotted envelope is the FULL INTER-BASIN RANGE, i.e. the
+minimum and maximum of the contributing basin CCDs, defined only where >= 2
+basins contribute.
+
+Why not the weighted standard deviation
+---------------------------------------
+The envelope used to be ``sigma(t) = sqrt(sum_i w_i (CCD_i - mean)^2)``. With uneven
+area weights that band is NOT bounded by the basin curves it is drawn over: for two
+basins with weights p and 1-p, sigma = sqrt(p(1-p))*|delta| while the distance from
+the weighted mean to the nearer curve is only min(p,1-p)*|delta|, and
+sqrt(p(1-p)) > min(p,1-p) for every p != 0.5. In this dataset the +-1 sigma band fell
+outside the basin range at 51 of 53 timesteps, by up to 292 m, which is what made
+Fig. 1 look wrong. The weighted sigma is still written to
+``outputs/inter_basin_stats_0-52Ma.txt`` for reference.
 
 This corrects the original ``2_CCD_averaging/1_CCD_averaging.py``, which used EQUAL
 weights among available basins and ignored the fraction columns — a bug per the
@@ -25,8 +37,10 @@ Input:
 
 Output:
     outputs/step3_global_ccd/global_ccd_with_basin_dispersion_0-52Ma.txt
-        Age_Ma, Global_CCD_m, CCD_minus_dispersion_m, CCD_plus_dispersion_m
+        Age_Ma, Global_CCD_m, CCD_basin_min_m, CCD_basin_max_m
         (integer values; commented header)
+    outputs/inter_basin_stats_0-52Ma.txt
+        Age_Ma, N_basins, Global_CCD_m, Basin_min_m, Basin_max_m, Weighted_SD_m
 
 Weighting note
 --------------
@@ -67,7 +81,10 @@ def synthesise(xlsx_path) -> pd.DataFrame:
 
     n = len(age)
     global_ccd = np.full(n, np.nan)
-    dispersion = np.full(n, np.nan)
+    band_lo = np.full(n, np.nan)      # minimum of the contributing basins
+    band_hi = np.full(n, np.nan)      # maximum of the contributing basins
+    wsd = np.full(n, np.nan)          # weighted SD, kept for reference only
+    nbas = np.zeros(n, dtype=int)
 
     for i in range(n):
         ccds = np.array([c[i] for c in ccd_cols], dtype=float)
@@ -84,21 +101,31 @@ def synthesise(xlsx_path) -> pd.DataFrame:
             w = np.ones(k) / k
         mu = float(np.sum(w * cv))
         global_ccd[i] = mu
+        nbas[i] = k
         if k >= 2:
-            dispersion[i] = float(np.sqrt(np.sum(w * (cv - mu) ** 2)))
+            band_lo[i] = float(cv.min())
+            band_hi[i] = float(cv.max())
+            wsd[i] = float(np.sqrt(np.sum(w * (cv - mu) ** 2)))
 
     mask = np.isfinite(age) & (age >= 0) & (age <= 52)
-    age52, g52, d52 = age[mask], global_ccd[mask], dispersion[mask]
+    age52, g52 = age[mask], global_ccd[mask]
+    lo52, hi52, sd52, k52 = band_lo[mask], band_hi[mask], wsd[mask], nbas[mask]
 
-    lower = np.where(np.isfinite(d52), np.rint(g52 - d52), np.nan)
-    upper = np.where(np.isfinite(d52), np.rint(g52 + d52), np.nan)
-
-    return pd.DataFrame({
+    main = pd.DataFrame({
         "Age_Ma": np.rint(age52).astype(int),
         "Global_CCD_m": np.rint(g52).astype(int),
-        "CCD_minus_dispersion_m": lower,
-        "CCD_plus_dispersion_m": upper,
+        "CCD_basin_min_m": np.where(np.isfinite(lo52), np.rint(lo52), np.nan),
+        "CCD_basin_max_m": np.where(np.isfinite(hi52), np.rint(hi52), np.nan),
     })
+    stats = pd.DataFrame({
+        "Age_Ma": np.rint(age52).astype(int),
+        "N_basins": k52,
+        "Global_CCD_m": np.rint(g52).astype(int),
+        "Basin_min_m": np.where(np.isfinite(lo52), np.rint(lo52), np.nan),
+        "Basin_max_m": np.where(np.isfinite(hi52), np.rint(hi52), np.nan),
+        "Weighted_SD_m": np.where(np.isfinite(sd52), np.rint(sd52), np.nan),
+    })
+    return main, stats
 
 
 def _plot(xlsx_path, out_df) -> None:
@@ -119,9 +146,9 @@ def _plot(xlsx_path, out_df) -> None:
         mask = a <= 52     # last 52 Ma only (match the published Fig. 1)
         ax.plot(a[mask], c[mask], color=col, lw=1.6, alpha=0.8, label=f"{label} CCD")
     age = out_df["Age_Ma"].to_numpy(float)
-    if np.isfinite(out_df["CCD_minus_dispersion_m"]).any():
-        ax.fill_between(age, out_df["CCD_minus_dispersion_m"], out_df["CCD_plus_dispersion_m"],
-                        color="0.6", alpha=0.35, label="inter-basin dispersion")
+    if np.isfinite(out_df["CCD_basin_min_m"]).any():
+        ax.fill_between(age, out_df["CCD_basin_min_m"], out_df["CCD_basin_max_m"],
+                        color="0.6", alpha=0.35, label="inter-basin range")
     ax.plot(age, out_df["Global_CCD_m"], color="black", lw=2.6, label="Global CCD (area-weighted)")
     ax.set_xlim(52, 0)                        # 0–52 Ma only
     ax.set_xlabel("Age (Ma)", fontsize=13); ax.set_ylabel("CCD (m)", fontsize=13)
@@ -131,18 +158,23 @@ def _plot(xlsx_path, out_df) -> None:
     ax.tick_params(labelsize=11)
     ax.legend(frameon=False, fontsize=12)
     fig.tight_layout()
-    save_matplotlib_figure(fig, "step3_global_ccd_with_dispersion", dpi=300, step="step3")
+    # This diagnostic IS Figure 1 of the paper, so it is written straight into the
+    # paper's figure folder as well - no manual copy step.
+    save_matplotlib_figure(fig, "step3_global_ccd_with_dispersion", dpi=300, step="step3",
+                           paper_name="Fig1_regional_global_ccd")
     plt.close(fig)
 
 
 def main() -> None:
     config.ensure_dirs()
-    out_df = synthesise(config.CCD_FRACTIONS_XLSX)
+    out_df, stats_df = synthesise(config.CCD_FRACTIONS_XLSX)
     out = write_table(config.GLOBAL_CCD_0_52, out_df,
                       header=["Age_Ma", "Global_CCD_m",
-                              "CCD_minus_dispersion_m", "CCD_plus_dispersion_m"],
+                              "CCD_basin_min_m", "CCD_basin_max_m"],
                       float_format="%.0f")
-    n_env = int(np.isfinite(out_df["CCD_minus_dispersion_m"]).sum())
+    write_table(config.STEP3_DIR / "inter_basin_stats_0-52Ma.txt", stats_df,
+                header=list(stats_df.columns), float_format="%.0f")
+    n_env = int(np.isfinite(out_df["CCD_basin_min_m"]).sum())
     print(f"[step3] wrote {out}  ({len(out_df)} rows, dispersion defined for {n_env})")
     _plot(config.CCD_FRACTIONS_XLSX, out_df)
 

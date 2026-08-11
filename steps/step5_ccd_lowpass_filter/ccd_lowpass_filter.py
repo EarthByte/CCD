@@ -16,7 +16,7 @@ Input:
 
 Output:
     outputs/step5_ccd_lowpass/low_pass_filtered_ccd_0-52Ma.txt
-        Age_Ma, Global_CCD_m, CCD_minus_dispersion_m, CCD_plus_dispersion_m
+        Age_Ma, Global_CCD_m, CCD_basin_min_m, CCD_basin_max_m
         (age integer; values to 1 decimal; commented header)
 """
 
@@ -51,23 +51,23 @@ def main() -> None:
     config.ensure_dirs()
     df = read_table(config.GLOBAL_CCD_0_52,
                     names=["Age_Ma", "Global_CCD_m",
-                           "CCD_minus_dispersion_m", "CCD_plus_dispersion_m"])
+                           "CCD_basin_min_m", "CCD_basin_max_m"])
     df = df.dropna(subset=["Age_Ma", "Global_CCD_m"]).reset_index(drop=True)
 
     age = df["Age_Ma"].to_numpy(float)
     central = lowpass(df["Global_CCD_m"].to_numpy(float))
-    minus = lowpass(df["CCD_minus_dispersion_m"].to_numpy(float))
-    plus = lowpass(df["CCD_plus_dispersion_m"].to_numpy(float))
+    minus = lowpass(df["CCD_basin_min_m"].to_numpy(float))
+    plus = lowpass(df["CCD_basin_max_m"].to_numpy(float))
 
     out = pd.DataFrame({
         "Age_Ma": np.rint(age).astype(int),
         "Global_CCD_m": np.round(central, 1),
-        "CCD_minus_dispersion_m": np.round(minus, 1),
-        "CCD_plus_dispersion_m": np.round(plus, 1),
+        "CCD_basin_min_m": np.round(minus, 1),
+        "CCD_basin_max_m": np.round(plus, 1),
     })
     path = write_table(config.LOWPASS_CCD_0_52, out,
                        header=["Age_Ma", "Global_CCD_m",
-                               "CCD_minus_dispersion_m", "CCD_plus_dispersion_m"],
+                               "CCD_basin_min_m", "CCD_basin_max_m"],
                        float_format="%.1f")
     print(f"[step5] wrote {path}  ({len(out)} rows)")
 

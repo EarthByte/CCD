@@ -86,29 +86,37 @@ def write_table(
     return path
 
 
-def _figure_targets(name: str, step: str | None):
+def _figure_targets(name: str, step: str | None, paper_name: str | None = None):
     """Return (png, pdf) path pairs a figure should be written to: always the
     shared ``Figures/`` folder, plus the per-step ``outputs/<step>/figures`` folder
-    when ``step`` is given. Directories are created as needed.
+    when ``step`` is given, plus the paper's figure folder under ``paper_name``
+    when that is given. Directories are created as needed.
     """
     from . import config
-    dirs = [config.FIGURES]
+    targets = [(config.FIGURES, name)]
     if step:
-        dirs.append(config.step_figures_dir(step))
+        targets.append((config.step_figures_dir(step), name))
+    if paper_name:
+        if config.PAPER_FIGURES is None:
+            print(f"  [figures] paper figure folder not found; "
+                  f"{paper_name} not propagated (set CCD_PAPER_FIGURES)")
+        else:
+            targets.append((config.PAPER_FIGURES, paper_name))
     pairs = []
-    for d in dirs:
+    for d, stem in targets:
         d.mkdir(parents=True, exist_ok=True)
-        pairs.append((d / f"{name}.png", d / f"{name}.pdf"))
+        pairs.append((d / f"{stem}.png", d / f"{stem}.pdf"))
     return pairs
 
 
-def save_matplotlib_figure(fig, name: str, dpi: int = 300, step: str | None = None):
+def save_matplotlib_figure(fig, name: str, dpi: int = 300, step: str | None = None,
+                           paper_name: str | None = None):
     """Save a matplotlib figure as both PNG and PDF at ``dpi``. Always writes to the
     shared ``Figures/`` folder; if ``step`` is given (e.g. ``"step5"``) it is also
     written to that step's ``outputs/<step>/figures`` folder. ``name`` is a bare
     stem (no extension). Returns the shared-folder (png, pdf) paths.
     """
-    pairs = _figure_targets(name, step)
+    pairs = _figure_targets(name, step, paper_name)
     for png, pdf in pairs:
         fig.savefig(png, dpi=dpi, bbox_inches="tight")
         fig.savefig(pdf, dpi=dpi, bbox_inches="tight")

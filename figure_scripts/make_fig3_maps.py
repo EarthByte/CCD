@@ -33,6 +33,7 @@ from matplotlib.cm import ScalarMappable
 import cartopy.crs as ccrs
 import gplately, pygplates, xarray as xr
 from matplotlib.colors import ListedColormap as _LCM
+import matplotlib.patheffects as _pe
 
 # ---- parse GMT cpt ----
 bounds=[]; colors=[]; over=under=None
@@ -98,9 +99,19 @@ for ax,T,lab in zip(axes.ravel(),TIMES,LABELS):
     for w,c,zz in [(1.5,"white",4),(0.65,"black",5)]:
         gp.plot_topological_plate_boundaries(ax, color=c, linewidth=w, zorder=zz)
     gp.plot_subduction_teeth(ax, color="black", zorder=6)
+    # graticule: parallels every 30 deg and meridians every 60 deg. The +-180
+    # meridians are omitted because the Mollweide outline already draws them.
+    ax.gridlines(ylocs=[-60, -30, 0, 30, 60], xlocs=[-120, -60, 0, 60, 120],
+                 color="0.30", linewidth=0.35, alpha=0.55, zorder=8)
+    for _lat in (-60, -30, 0, 30, 60):
+        ax.plot([-180, -174], [_lat, _lat], transform=ccrs.PlateCarree(),
+                color="black", lw=0.9, solid_capstyle="butt", zorder=9)
+        _t = "0\u00b0" if _lat == 0 else f"{abs(_lat)}\u00b0{'N' if _lat > 0 else 'S'}"
+        ax.text(-171, _lat, _t, transform=ccrs.PlateCarree(), fontsize=7.5,
+                va="center", ha="left", zorder=10,
+                path_effects=[_pe.withStroke(linewidth=1.8, foreground="white")])
     ax.text(0.015,0.985, f"{lab}", transform=ax.transAxes, fontsize=13, fontweight="bold",
-            va="top", ha="left", zorder=10,
-            bbox=dict(boxstyle="square,pad=0.30", fc="white", ec="black", lw=1.0))
+            va="top", ha="left", zorder=10)
     # age label shifted ~4 mm left of its former position so it clears the Mollweide outline
     _panel_mm = ax.get_position().width*fig.get_size_inches()[0]*25.4
     ax.text(0.145-4.0/_panel_mm, 0.972, f"{T} Ma", transform=ax.transAxes, fontsize=12,

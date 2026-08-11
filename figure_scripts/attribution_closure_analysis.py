@@ -6,6 +6,7 @@ Inputs (staged):
   CCD hybrid curve      : <figures>/CCD_hybrid_DM2026.txt  (age, CCD, min, max; CCD negative-up)
   Sea level (long-term) : step3 sea_level_quantile_envelope_0-205Ma.txt
   Degassing components  : 05_atmospheric_influx_all_sources.csv (Mt C/yr, per component, min/mean/max)
+  Plate influx by reservoir : 02_plate_influx.csv (Mt C/yr; used for the biological-sink proxy)
 
 Conventions:
   depth = -CCD  (positive down; larger = deeper = higher deep-ocean saturation)
@@ -35,6 +36,8 @@ FIGDIR.mkdir(parents=True, exist_ok=True)
 SL  = CW / "steps/step4_sealevel_envelope/outputs/sea_level_quantile_envelope_0-205Ma.txt"
 # degassing components from the consolidated headless CO2 notebooks (Notebook 05):
 ATM = CW / "steps/step10_carbon_cycle_degassing/Alfonso_etal_2024_DM26/Outputs/Notebook05/csv/05_atmospheric_influx_all_sources.csv"
+# plate influx split by reservoir (Notebook 02), needed for the biological-sink proxy
+PLI = CW / "steps/step10_carbon_cycle_degassing/Alfonso_etal_2024_DM26/Outputs/Notebook02/csv/02_plate_influx.csv"
 
 # ---------- load ----------
 ccd = pd.read_csv(FIGDIR / "CCD_hybrid_DM2026.txt", sep=r"\s+", header=None,
@@ -63,10 +66,24 @@ comp = {
  "intraplate":      "intraplate_volcanism_outflux_mean",
  "gross_outflux":   "gross_atmospheric_outflux_biased_rift_mean",
  "net_influx":      "net_atmospheric_influx_biased_and_sed_mean",
- "sink_plate_sed":  "gross_upper_plate_influx_with_sed_mean",
 }
 for k,c in comp.items():
     D[k]=onto(atm["age"], atm[c]) if c in atm.columns else np.nan
+
+# ---------- biological-sink proxy ----------
+# Carbon carried down on the subducting plate and retained by the upper plate.
+# The model's `gross_upper_plate_influx_with_sed` sums sediments + altered crust +
+# SERPENTINITE, but serpentinite carbon sits in serpentinised mantle lithosphere:
+# it is mantle-derived and returns to the mantle, a closed mantle-plate-mantle
+# loop, so it is not a biological sink and is excluded here. Altered oceanic
+# crust is kept: its carbon is hydrothermal, but ultimately of biological origin.
+# Mantle lithosphere proper was never in the sum. Serpentinite is ~5% of the old
+# total over 0-52 Ma, so this is a small correction of principle.
+_pli = pd.read_csv(PLI, index_col=0, header=[0, 1])
+_pli.index = pd.to_numeric(_pli.index, errors="coerce")
+_pli = _pli[np.isfinite(_pli.index)]
+_bio = _pli[("sediments", "mean")].to_numpy() + _pli[("crust", "mean")].to_numpy()
+D["sink_plate_sed"] = onto(_pli.index.to_numpy(float), _bio)
 
 # ---------- AR1-adjusted correlation ----------
 def ar1_corr(x,y):

@@ -51,7 +51,7 @@ def _read2(path: Path, names):
 
 
 def read_ccd(path: Path) -> pd.DataFrame:
-    df = _read2(path, ["Age_Ma", "Global_CCD_m", "CCD_minus_dispersion_m", "CCD_plus_dispersion_m"][:4])
+    df = _read2(path, ["Age_Ma", "Global_CCD_m", "CCD_basin_min_m", "CCD_basin_max_m"][:4])
     df["CCD_m_pos_down"] = -df["Global_CCD_m"]
     return df
 
