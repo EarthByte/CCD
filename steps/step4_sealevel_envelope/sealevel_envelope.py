@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Step 3 — Long-term sea-level curve from a rolling high-quantile peak envelope.
+Step 4 — Long-term sea-level curve from a rolling high-quantile peak envelope.
 
 Apply a rolling high-quantile, peak-following filter to the short-term sea-level
 compilation to obtain a long-term, low-pass, peak-following envelope. This is the
@@ -11,7 +11,9 @@ the quantile envelope was used.
 Parameters (config.PARAMS): window = 2.0 Myr, quantile = 0.90, smoothing = 1.5 Myr.
 
 Input:
-    data/sealevel/Miller_Haq_SeaLevel_ShortTerm_hybrid.tsv   (Age_Ma, SL_m; ~0.1 Myr)
+    steps/step1_timescale_conversion/outputs/sealevel_shortterm_hybrid_GTS2020.txt
+        the Miller (2024) / Haq hybrid short-term record, normalised to GTS2020 and
+        resampled onto a 0.1 Myr grid by step 0
 
 Outputs (outputs/step4_sealevel_envelope/):
     sea_level_quantile_envelope_0-205Ma.txt   (full range; feeds step 5 prediction)
@@ -32,9 +34,10 @@ from ccdworkflow import config
 from ccdworkflow.io import read_xy, write_table
 
 P = config.PARAMS
-RAW_SL = config.SEALEVEL / "Miller_Haq_SeaLevel_ShortTerm_hybrid.tsv"   # envelope input
-HAQ_SHORTTERM = config.SEALEVEL / "Haq_SeaLevel_ShortTerm_hybrid.tsv"   # validation input
-HAQ_LONGTERM = config.SEALEVEL / "Haq87_Longterm_v3.txt"                # validation target
+# All three come from step 0, i.e. already on GTS2020 and on a uniform 0.1 Myr grid.
+RAW_SL = config.GTS2020_SL_SHORTTERM        # envelope input
+HAQ_SHORTTERM = config.GTS2020_HAQ_SHORTTERM  # validation input
+HAQ_LONGTERM = config.GTS2020_HAQ_LONGTERM    # validation target
 
 
 def _to_samples(myr: float, dt: float) -> int:
@@ -59,7 +62,17 @@ def quantile_envelope(ages: np.ndarray, sl: np.ndarray,
     return env.to_numpy()
 
 
+def _require_step0() -> None:
+    missing = [p for p in (RAW_SL, HAQ_SHORTTERM, HAQ_LONGTERM) if not p.exists()]
+    if missing:
+        raise FileNotFoundError(
+            "run step 0 (timescale conversion) first - missing: "
+            + ", ".join(str(p) for p in missing)
+        )
+
+
 def compute() -> pd.DataFrame:
+    _require_step0()
     df = read_xy(RAW_SL, names=["Age_Ma", "SL_m"])
     ages = df["Age_Ma"].to_numpy(float)
     sl = df["SL_m"].to_numpy(float)
@@ -90,6 +103,7 @@ def _plot_envelope(env: pd.DataFrame) -> None:
 
 
 def validate() -> None:
+    _require_step0()
     # Validation applies the operator to the Haq short-term record and compares
     # against the published Haq long-term curve (reproduces the notebook check).
     df = read_xy(HAQ_SHORTTERM, names=["Age_Ma", "SL_m"])

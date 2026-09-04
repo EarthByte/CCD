@@ -41,14 +41,34 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-# Standalone copy living in steps_carbon/step8_analysis/.
 # Defaults resolve to the real project locations: the mean/min/max present-day
-# grids under steps_carbon/step7_carbonate/, the table in this folder, and
-# figures/CSV to output/ground_truth/.
+# grids written by the carbonate-thickness step, the benchmark table in this
+# folder, and figures/CSV to output/ground_truth/.
 HERE = Path(__file__).resolve().parent
 SCRIPTS_ROOT = HERE.parent
 FIGURES = HERE / "output" / "ground_truth"
-_GRID7 = SCRIPTS_ROOT / "step7_carbonate"
+
+
+def _thickness_root() -> Path:
+    """Folder holding the carbonate_sed_thickness_*_DM2026 grid directories.
+
+    The step was renumbered, so the current location is checked first and the
+    pre-renumbering one kept as a fallback. Silently defaulting to a path that no
+    longer exists aborts the carbon runner before the CO2 notebooks ever start.
+    """
+    for cand in (SCRIPTS_ROOT / "step8_carbonate_sediment_thickness",
+                 SCRIPTS_ROOT / "step7_carbonate"):
+        if (cand / "carbonate_sed_thickness_DM2026").is_dir():
+            return cand
+    raise SystemExit(
+        "cannot find the carbonate-thickness grids: looked for "
+        "carbonate_sed_thickness_DM2026/ under "
+        f"{SCRIPTS_ROOT / 'step8_carbonate_sediment_thickness'} - run the "
+        "carbonate-thickness step first."
+    )
+
+
+_GRID7 = _thickness_root()
 _GRID_MEAN = _GRID7 / "carbonate_sed_thickness_DM2026" / "compacted_sediment_thickness_0.25_0.nc"
 _GRID_MIN = _GRID7 / "carbonate_sed_thickness_min_DM2026" / "compacted_sediment_thickness_0.25_0.nc"
 _GRID_MAX = _GRID7 / "carbonate_sed_thickness_max_DM2026" / "compacted_sediment_thickness_0.25_0.nc"

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Runner for the CCD core — steps 1-7 (regional CCD -> global synthesis ->
-sea-level calibration -> planktogenic hybrid CCD). Run from the repo root:
+Runner for the CCD core — steps 1-7 (timescale normalisation -> global synthesis
+-> sea-level calibration -> planktogenic hybrid CCD). Run from the repo root:
 
     python run_ccd_core.py
 
@@ -18,7 +18,7 @@ import sys
 from pathlib import Path
 
 STEPS = [
-    ("steps/step1_regional_ccd_resampling/resample_regional_ccd.py", []),
+    ("steps/step1_timescale_conversion/convert_to_gts2020.py", []),
     ("steps/step3_global_ccd_synthesis/global_ccd_synthesis.py", []),
     ("steps/step4_sealevel_envelope/sealevel_envelope.py", ["--validate"]),
     ("steps/step5_ccd_lowpass_filter/ccd_lowpass_filter.py", []),

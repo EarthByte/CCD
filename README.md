@@ -24,7 +24,7 @@ git clone https://github.com/EarthByte/CCD.git
 cd CCD
 pip install -r requirements.txt
 
-python run_ccd_core.py          # steps 1–7: regional CCDs → global CCD → 170 Ma hybrid
+python run_ccd_core.py          # steps 1–7: timescale normalisation → global CCD → 170 Ma hybrid
 ```
 
 `run_ccd_core.py` is self-contained and deterministic: every input it needs is in
@@ -44,11 +44,11 @@ start from the current CCD and nothing stale propagates. See
 
 ---
 
-## Pipeline
+## Workflow
 
 | Step | Folder | What it does |
 |-----:|--------|--------------|
-| 1 | `steps/step1_regional_ccd_resampling` | Resample the Atlantic, Pacific and Indian regional CCDs onto a common 1 Myr grid |
+| 1 | `steps/step1_timescale_conversion` | Normalise every CCD and sea-level curve to GTS2020, then resample onto a common grid |
 | 2 | `steps/step2_ocean_basin_areas` | Reconstructed ocean-basin area fractions through time (notebook; result stored in `data/ccds_and_oceanbasin_fractions.xlsx`) |
 | 3 | `steps/step3_global_ccd_synthesis` | Area-weighted global CCD synthesis and inter-basin dispersion, 0–52 Ma |
 | 4 | `steps/step4_sealevel_envelope` | Hybrid Miller et al. (2024) / Haq et al. (1987) sea-level peak-following envelope |
@@ -63,8 +63,21 @@ Steps 1 and 3–7 are pure Python (numpy / scipy / pandas / matplotlib). Step 2 
 notebook. Steps 8–10 additionally need `pygplates`, `gplately`, GMT/`pygmt` and
 `jupyter`, plus the Zenodo grids.
 
+### Timescales
+
+The published source curves sit on three different geomagnetic polarity
+timescales: GTS2020 (Ogg, 2020) for the Miller et al. (2024) sea level and the
+Dalvand et al. (2025) Pacific and Indian CCDs, GTS2012 (Ogg, 2012) for the
+Atlantic CCD and the Haq sea-level compilations, and Cande & Kent (1995) for the
+Pälike et al. (2012) record that extends the Pacific CCD beyond 36 Ma. **Step 1 is
+the single place where these age models are reconciled.** Everything downstream
+reads GTS2020 curves from `steps/step1_timescale_conversion/outputs/`. Segments
+already on GTS2020 pass through untouched, splices are re-imposed after conversion,
+and the converted series are resampled onto a 1 Myr grid for the CCDs and 0.1 Myr
+for sea level. See `steps/step1_timescale_conversion/README.md`.
+
 Each step writes to its own `outputs/` (or `output/`) folder. Those outputs are
-committed here so the results can be inspected without rerunning the pipeline.
+committed here so the results can be inspected without rerunning the workflow.
 
 **Notebooks are committed with their outputs cleared** to keep the repository
 small. Their executed results are included as CSV under

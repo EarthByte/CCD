@@ -18,13 +18,31 @@ CW = _workflow_root()
 FIGDIR = _HERE / "Figures" if (_HERE / "Figures").is_dir() else CW / "figures"
 FIGDIR.mkdir(parents=True, exist_ok=True)
 STEP9 = CW/"steps/step9_carbonate_volume_analysis"
-STAGE = STEP9/"_cloud_stage"                       # carb_thick_*Ma.nc
+# Carbonate-thickness grids. The live source is the carbonate-thickness step, so the
+# figure always reflects the current run; the hand-staged _cloud_stage snapshot is
+# kept only as a fallback for a checkout without the grids. Reading the snapshot by
+# default silently froze this figure at the grids of whichever run staged it.
+STEP8 = CW/"steps/step8_carbonate_sediment_thickness/carbonate_sed_thickness_DM2026"
+STAGE = STEP9/"_cloud_stage"                       # fallback: carb_thick_*Ma.nc
+
+
+def _thickness_grid(T):
+    live = STEP8/f"compacted_sediment_thickness_0.25_{T}.nc"
+    if live.exists():
+        return live
+    snap = STAGE/f"carb_thick_{T}Ma.nc"
+    if snap.exists():
+        print(f"  [fig3] {T} Ma: using the _cloud_stage snapshot, not the current step-8 grid")
+        return snap
+    raise SystemExit(f"no carbonate-thickness grid for {T} Ma (looked in {STEP8} and {STAGE})")
 MODEL = STEP9/"input/Alfonso_etal_2024_modClennettMuller"
 CPT   = CW/"data/carbonate_thickness_blue_orange_red_pale.cpt"
 CMASK = CW/"steps/step10_carbon_cycle_degassing/Alfonso_etal_2024_DM26/Grids/InputGrids/ContinentalMasks"
 OUT   = FIGDIR
-for _p in (STAGE, MODEL, CPT):
+for _p in (MODEL, CPT):
     if not Path(_p).exists(): raise SystemExit(f"missing input: {_p}")
+if not (STEP8.is_dir() or STAGE.is_dir()):
+    raise SystemExit(f"missing input: no carbonate-thickness grids at {STEP8} or {STAGE}")
 OUT.mkdir(exist_ok=True)
 import matplotlib; matplotlib.use("Agg")
 import matplotlib.pyplot as plt
@@ -61,7 +79,7 @@ cont  = str(MODEL/"ContinentalPolygons/Global_PresentDay_ContPolygons_2019_v2.gp
 rotm = pygplates.RotationModel(rot)
 model = gplately.PlateReconstruction(rotm, topology_features=topo, static_polygons=static, anchor_plate_id=0)
 
-# The carb_thick_*Ma.nc grids in _cloud_stage are stored in reconstructed (paleo)
+# The carbonate-thickness grids are stored in reconstructed (paleo)
 # coordinates, so they must NOT be rotated again. Set False only if you swap in
 # grids that are still in present-day coordinates.
 GRIDS_ARE_RECONSTRUCTED = True
@@ -75,7 +93,7 @@ for ax,T,lab in zip(axes.ravel(),TIMES,LABELS):
     t0=time.time()
     ax.set_global(); ax.spines["geo"].set_linewidth(0.7)
     ax.set_facecolor("0.74")   # any cell with no grid data reads as continental crust, not white
-    d=xr.open_dataset(STAGE/f"carb_thick_{T}Ma.nc"); z=d["z"].values
+    d=xr.open_dataset(_thickness_grid(T)); z=d["z"].values
     if GRIDS_ARE_RECONSTRUCTED or T==0:
         data=z                      # grid is already in paleo-coordinates: plot as is
     else:                           # only for grids supplied in present-day coordinates

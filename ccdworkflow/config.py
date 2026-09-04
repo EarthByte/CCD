@@ -5,8 +5,9 @@ All paths derive from the repository root so the workflow is fully relocatable.
 Import ``REPO_ROOT``, ``DATA``, the per-step output dirs and the canonical file
 constants rather than hard-coding paths inside step scripts.
 
-Layout (after the steps 1-10 reorganization):
-    steps/step1_regional_ccd_resampling/     -> STEP1_DIR (outputs/)
+Layout (steps 1-10):
+    steps/step1_timescale_conversion/        -> STEP1_DIR (outputs/); every CCD and
+                                              sea-level curve normalised to GTS2020
     steps/step2_ocean_basin_areas/           (notebook prep; produces the area
                                               fractions used by step 3)
     steps/step3_global_ccd_synthesis/        -> STEP3_DIR
@@ -32,7 +33,8 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
 DATA = REPO_ROOT / "data"                       # raw inputs (not produced by any step)
-REGIONAL_CCD = DATA / "regional_ccd"            # ATL / IND / PAC regional CCD curves
+REGIONAL_CCD = DATA / "regional_ccd"            # archived 0.5 Myr ATL/IND/PAC curves;
+                                                # kept for provenance, read by no step
 SEALEVEL = DATA / "sealevel"                    # sea-level compilations
 REFERENCE_CCD = DATA / "reference_ccd"          # published reference CCD curves
 CCD_FRACTIONS_XLSX = DATA / "ccds_and_oceanbasin_fractions.xlsx"
@@ -62,7 +64,7 @@ def _paper_figures_dir() -> Path | None:
 PAPER_FIGURES = _paper_figures_dir()
 
 # Per-step output directories (each inside its step folder: steps/<step>/outputs)
-STEP1_DIR = STEPS / "step1_regional_ccd_resampling" / "outputs"     # resampled regional CCDs
+STEP1_DIR = STEPS / "step1_timescale_conversion" / "outputs"        # GTS2020-normalised inputs
 STEP3_DIR = STEPS / "step3_global_ccd_synthesis" / "outputs"        # synthesised global CCD
 STEP4_DIR = STEPS / "step4_sealevel_envelope" / "outputs"           # sea-level quantile envelope
 STEP5_DIR = STEPS / "step5_ccd_lowpass_filter" / "outputs"          # low-pass filtered CCD
@@ -99,6 +101,17 @@ def ensure_dirs() -> None:
 # --------------------------------------------------------------------------
 # Canonical output file names (single source of truth for step-to-step wiring)
 # --------------------------------------------------------------------------
+# Step 1 -> Steps 3 and 4  (everything normalised to GTS2020)
+GTS2020_ATL_CCD = STEP1_DIR / "ATL_CCD_GTS2020_1my.txt"
+GTS2020_PAC_CCD = STEP1_DIR / "PAC_CCD_GTS2020_1my.txt"
+GTS2020_IND_CCD = STEP1_DIR / "IND_CCD_GTS2020_1my.txt"
+GTS2020_REGIONAL_CCD = {"Atlantic": GTS2020_ATL_CCD,
+                        "Pacific": GTS2020_PAC_CCD,
+                        "Indian": GTS2020_IND_CCD}
+GTS2020_SL_SHORTTERM = STEP1_DIR / "sealevel_shortterm_hybrid_GTS2020.txt"
+GTS2020_HAQ_SHORTTERM = STEP1_DIR / "Haq_shortterm_hybrid_GTS2020.txt"
+GTS2020_HAQ_LONGTERM = STEP1_DIR / "Haq87_longterm_GTS2020.txt"
+
 # Step 3 -> Step 5
 GLOBAL_CCD_0_52 = STEP3_DIR / "global_ccd_with_basin_dispersion_0-52Ma.txt"
 

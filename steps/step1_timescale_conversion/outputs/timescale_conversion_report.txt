@@ -1,0 +1,22 @@
+Timescale conversion to GTS2020 (Ogg, 2020)
+
+Regional CCD curves (resampled to 1 Myr after conversion):
+  Atlantic        0.0-1000000000.0 Ma  from Ogg_2012         n=  67  ages moved:   43  shift mean  +0.005 Myr, max |0.494| Myr
+  Atlantic     -> ATL_CCD_GTS2020_1my.txt  (66 rows, 0-65 Ma)
+  Pacific         0.0-  35.5 Ma  from Ogg_2020         n=  36  ages moved:    0  shift mean  +0.000 Myr, max |0.000| Myr
+  Pacific        35.5-1000000000.0 Ma  from Cande_Kent_1995  n=  17  ages moved:   15  shift mean  -0.106 Myr, max |0.341| Myr
+  Pacific      -> PAC_CCD_GTS2020_1my.txt  (53 rows, 0-52 Ma)
+  Indian          0.0-1000000000.0 Ma  from Ogg_2020         n=  24  ages moved:    0  shift mean  +0.000 Myr, max |0.000| Myr
+  Indian       -> IND_CCD_GTS2020_1my.txt  (24 rows, 0-23 Ma)
+
+Sea level (resampled to 0.1 Myr after conversion):
+  SL hybrid       0.0-  66.6 Ma  from Ogg_2020         n= 667  ages moved:    0  shift mean  +0.000 Myr, max |0.000| Myr
+  SL hybrid      66.6-1000000000.0 Ma  from Ogg_2012         n=1385  ages moved:  843  shift mean  -1.319 Myr, max |4.516| Myr
+  SL hybrid    splice re-imposed at 66.600 Ma (GTS2020): 1 converted sample(s) crossed back below it and were dropped; gap to the next sample 0.082 Myr
+  SL hybrid    dropped 26 sample(s) folded onto a duplicate age
+  SL hybrid    -> sealevel_shortterm_hybrid_GTS2020.txt (2051 rows, 0.0-205.0 Ma)
+  Haq ST          0.0-1000000000.0 Ma  from Ogg_2012         n=1796  ages moved: 1151  shift mean  -1.015 Myr, max |4.516| Myr
+  Haq ST       dropped 42 sample(s) folded onto a duplicate age
+  Haq ST       -> Haq_shortterm_hybrid_GTS2020.txt (2051 rows, 0.0-205.0 Ma)
+  Haq87 LT        0.0-1000000000.0 Ma  from Ogg_2012         n=1545  ages moved:  809  shift mean  -0.796 Myr, max |4.521| Myr
+  Haq87 LT     -> Haq87_longterm_GTS2020.txt (2561 rows, 0.0-256.0 Ma)

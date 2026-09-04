@@ -25,8 +25,9 @@ OUT = FIGDIR
 AGEMAX=170; MHT=66.6   # Miller/Haq transition age
 def rd(p,names): return pd.read_csv(p,sep=r"\s+",engine="python",comment="#",header=None,names=names)
 
-sl =rd(CW/"data/sealevel/Miller_Haq_SeaLevel_ShortTerm_hybrid.tsv",["age","sl"]).sort_values("age")
-haq=rd(CW/"data/sealevel/Haq87_Longterm_v3.txt",["age","sl"]).sort_values("age")
+# Sea-level curves come from step 0, i.e. normalised to GTS2020.
+sl =rd(CW/"steps/step1_timescale_conversion/outputs/sealevel_shortterm_hybrid_GTS2020.txt",["age","sl"]).sort_values("age")
+haq=rd(CW/"steps/step1_timescale_conversion/outputs/Haq87_longterm_GTS2020.txt",["age","sl"]).sort_values("age")
 env=rd(CW/"steps/step4_sealevel_envelope/outputs/sea_level_quantile_envelope_0-205Ma.txt",["age","sl"]).sort_values("age")
 mt =pd.read_csv(CW/"steps/step6_sealevel_ccd_regression/outputs/diagnostics/matched_timeseries.csv")
 rr =pd.read_csv(CW/"steps/step6_sealevel_ccd_regression/outputs/diagnostics/regression_results.csv")
@@ -86,7 +87,7 @@ axb.plot(hyb["age"],hyb["ccd"],color="mediumturquoise",lw=2.6,zorder=4,label="Hy
 axb.plot(bw["age"],bw["ccd"],color="#ee7600",lw=1.7,zorder=3,label="Boss & Wilkinson (1991)")
 axb.plot(db["age"],db["ccd"],color="#8b008b",lw=1.7,zorder=3,label="Delaney & Boyle")
 # paleoceanographic events discussed in the text
-EVENTS=[(137.0,"WE"),(119.0,"ACIP"),(93.9,"OAE2"),(56.0,"PETM"),(33.9,"EOT"),(15.2,"MMCO")]
+EVENTS=[(134.0,"WE"),(115.0,"LACI"),(93.9,"OAE2"),(56.0,"PETM"),(33.9,"EOT"),(15.2,"MMCO")]
 for eage,elab in EVENTS:
     axb.axvline(eage,color="0.45",ls=":",lw=1.0,zorder=2)
     axb.text(eage,1.005,elab,transform=axb.get_xaxis_transform(),fontsize=8.5,color="0.30",

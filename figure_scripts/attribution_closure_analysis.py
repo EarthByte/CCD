@@ -66,9 +66,20 @@ comp = {
  "intraplate":      "intraplate_volcanism_outflux_mean",
  "gross_outflux":   "gross_atmospheric_outflux_biased_rift_mean",
  "net_influx":      "net_atmospheric_influx_biased_and_sed_mean",
+ # the two end-members of the net solid-Earth outflux (Fig. S5 and Table S1):
+ # counting the growing pelagic carbonate reservoir as a genuinely new sink
+ # (net_out_incl_sed) or as a shallow-to-deep redistribution of burial
+ # (net_out_excl_sed, read separately below).
+ "net_out_incl_sed": "net_atmospheric_influx_unbiased_and_sed_mean",
 }
 for k,c in comp.items():
     D[k]=onto(atm["age"], atm[c]) if c in atm.columns else np.nan
+
+NET = CW / "steps/step10_carbon_cycle_degassing/Alfonso_etal_2024_DM26/Outputs/Notebook05/csv/05_net_carbon_outflux.csv"
+_net = pd.read_csv(NET, index_col=0, header=[0, 1])
+_net.index = pd.to_numeric(_net.index, errors="coerce")
+_net = _net[np.isfinite(_net.index)]
+D["net_out_excl_sed"] = onto(_net.index.to_numpy(float), _net[("net_carbon_outflux", "mean")].to_numpy())
 
 # ---------- biological-sink proxy ----------
 # Carbon carried down on the subducting plate and retained by the upper plate.
@@ -111,7 +122,8 @@ for label, mask in [("OBSERVED 0-52 Ma", (D["age"]<=52).to_numpy()),
     depth=depthF[mask]; ddepth=ddepthF[mask]
     print(f"\n================ {label}  (n={int(mask.sum())}) ================")
     print(f"{'series':16s} {'r(CCD)':>11s} {'lag*':>5s} {'r@lag':>7s} {'pAR1':>7s} | {'r(dCCD)':>8s}")
-    for k in ["sl","MOR_ridge","arc_subduction","rift","carb_platform","gross_outflux","net_influx","sink_plate_sed"]:
+    for k in ["sl","MOR_ridge","arc_subduction","rift","carb_platform","intraplate",
+              "gross_outflux","net_influx","net_out_excl_sed","net_out_incl_sed","sink_plate_sed"]:
         sF=D[k].to_numpy()
         r0,_,p0=ar1_corr(sF[mask],depth)
         lag,rl,_,pl=lagscan(sF,depthF,mask)
