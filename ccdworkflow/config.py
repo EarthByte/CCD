@@ -109,8 +109,8 @@ GTS2020_REGIONAL_CCD = {"Atlantic": GTS2020_ATL_CCD,
                         "Pacific": GTS2020_PAC_CCD,
                         "Indian": GTS2020_IND_CCD}
 GTS2020_SL_SHORTTERM = STEP1_DIR / "sealevel_shortterm_hybrid_GTS2020.txt"
-GTS2020_HAQ_SHORTTERM = STEP1_DIR / "Haq_shortterm_hybrid_GTS2020.txt"
-GTS2020_HAQ_LONGTERM = STEP1_DIR / "Haq87_longterm_GTS2020.txt"
+# The standalone Haq (1987) curves are comparison only and stay on GTS2012;
+# read them from data/sealevel/ directly, not from step 1.
 
 # Step 3 -> Step 5
 GLOBAL_CCD_0_52 = STEP3_DIR / "global_ccd_with_basin_dispersion_0-52Ma.txt"

@@ -30,13 +30,13 @@ authors. Set ``WEIGHTING = "equal"`` to reproduce that old behaviour.
 Inputs:
     steps/step1_timescale_conversion/outputs/{ATL,PAC,IND}_CCD_GTS2020_1my.txt
         the three regional CCD curves, all normalised to GTS2020 and resampled
-        onto a 1 Myr grid by step 0
+        onto a 1 Myr grid by step 1
     data/ccds_and_oceanbasin_fractions.xlsx  (header on row 2)
         col 6 master age grid (1 Myr)
         col 7/8/9 Atlantic/Pacific/Indian AREA FRACTION  (see note below)
         The regional CCD columns 0-5 of this spreadsheet are NO LONGER read here:
         they carry the published curves on their original, mutually inconsistent
-        timescales. Step 0 converts them; this step consumes the converted files.
+        timescales. Step 1 converts them; this step consumes the converted files.
 
 Output:
     outputs/step3_global_ccd/global_ccd_with_basin_dispersion_0-52Ma.txt
@@ -70,13 +70,13 @@ BASINS = ("Atlantic", "Pacific", "Indian")
 
 
 def load_regional_ccds() -> dict:
-    """The GTS2020-normalised regional CCD curves written by step 0."""
+    """The GTS2020-normalised regional CCD curves written by step 1."""
     out = {}
     for name in BASINS:
         path = config.GTS2020_REGIONAL_CCD[name]
         if not path.exists():
             raise FileNotFoundError(
-                f"{path} is missing - run step 0 (timescale conversion) first."
+                f"{path} is missing - run step 1 (timescale conversion) first."
             )
         d = pd.read_csv(path, sep=r"\s+", comment="#", header=None,
                         names=["Age_Ma", "CCD_m"])

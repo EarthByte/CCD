@@ -71,7 +71,10 @@ Dalvand et al. (2025) Pacific and Indian CCDs, GTS2012 (Ogg, 2012) for the
 Atlantic CCD and the Haq sea-level compilations, and Cande & Kent (1995) for the
 Pälike et al. (2012) record that extends the Pacific CCD beyond 36 Ma. **Step 1 is
 the single place where these age models are reconciled.** Everything downstream
-reads GTS2020 curves from `steps/step1_timescale_conversion/outputs/`. Segments
+reads GTS2020 curves from `steps/step1_timescale_conversion/outputs/`. Only curves
+that enter the analysis are converted; published curves shown purely for comparison,
+including the Haq (1987) pair used to validate the sea-level envelope, keep their own
+age models. Segments
 already on GTS2020 pass through untouched, splices are re-imposed after conversion,
 and the converted series are resampled onto a 1 Myr grid for the CCDs and 0.1 Myr
 for sea level. See `steps/step1_timescale_conversion/README.md`.

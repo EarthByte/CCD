@@ -15,12 +15,14 @@ Timescale of each input
     Indian CCD        Dalvand et al. (2025)           GTS2020      -> as is
     Sea level         Miller et al. (2024), 0-66.6 Ma GTS2020      -> as is
                       Haq et al., older than 66.6 Ma  GTS2012      -> convert
-    Haq short-term    Haq et al. (1987)               GTS2012      -> convert
-    Haq long-term     Haq et al. (1987)               GTS2012      -> convert
 
-The two Haq records are the validation pair used in step 4 (the envelope operator
-is applied to the short-term curve and checked against the published long-term
-curve), so both are converted, keeping them in a common frame.
+Only curves that enter the analysis are converted. The standalone Haq (1987)
+short-term and long-term curves are NOT converted: they are used solely for
+comparison, as the step-4 validation pair and as a reference curve in Figure 2b,
+and both sides of that comparison are already in the same published frame.
+Remapping them would change a reported statistic for no reason, and it would treat
+them differently from the other published comparison curves, which stay on their
+own age models.
 
 Only the segments that need it are converted; a segment already on GTS2020 is
 passed through untouched, so no spurious interpolation is introduced.
@@ -41,16 +43,12 @@ would be destroyed by a 1 Myr grid).
 Inputs:
     data/ccds_and_oceanbasin_fractions.xlsx      regional CCD columns
     data/sealevel/Miller_Haq_SeaLevel_ShortTerm_hybrid.tsv
-    data/sealevel/Haq_SeaLevel_ShortTerm_hybrid.tsv
-    data/sealevel/Haq87_Longterm_v3.txt
 
 Outputs (outputs/):
     ATL_CCD_GTS2020_1my.txt        Age_Ma, CCD_m
     PAC_CCD_GTS2020_1my.txt
     IND_CCD_GTS2020_1my.txt
     sealevel_shortterm_hybrid_GTS2020.txt   Age_Ma, Sea_level_m
-    Haq_shortterm_hybrid_GTS2020.txt
-    Haq87_longterm_GTS2020.txt
     timescale_conversion_report.txt         what moved, and by how much
 """
 
@@ -259,23 +257,10 @@ def main() -> None:
     log.append(f"  {'SL hybrid':<12s} -> sealevel_shortterm_hybrid_GTS2020.txt "
                f"({len(ga)} rows, {ga.min():.1f}-{ga.max():.1f} Ma)")
 
-    a, v = read_xy(config.SEALEVEL / "Haq_SeaLevel_ShortTerm_hybrid.tsv")
-    ca, cv = convert_series(tool, scales, a, v, [(0.0, 1e9, GTS2012)], "Haq ST", log)
-    ga, gv = regrid(ca, cv, 0.1)
-    write_table(OUT / "Haq_shortterm_hybrid_GTS2020.txt",
-                pd.DataFrame({"Age_Ma": ga, "Sea_level_m": np.round(gv, 6)}),
-                header=["Age_Ma", "Sea_level_m"], float_format="%.6f")
-    log.append(f"  {'Haq ST':<12s} -> Haq_shortterm_hybrid_GTS2020.txt "
-               f"({len(ga)} rows, {ga.min():.1f}-{ga.max():.1f} Ma)")
-
-    a, v = read_xy(config.SEALEVEL / "Haq87_Longterm_v3.txt")
-    ca, cv = convert_series(tool, scales, a, v, [(0.0, 1e9, GTS2012)], "Haq87 LT", log)
-    ga, gv = regrid(ca, cv, 0.1)
-    write_table(OUT / "Haq87_longterm_GTS2020.txt",
-                pd.DataFrame({"Age_Ma": ga, "Sea_level_m": np.round(gv, 6)}),
-                header=["Age_Ma", "Sea_level_m"], float_format="%.6f")
-    log.append(f"  {'Haq87 LT':<12s} -> Haq87_longterm_GTS2020.txt "
-               f"({len(ga)} rows, {ga.min():.1f}-{ga.max():.1f} Ma)")
+    log.append("")
+    log.append("Not converted (comparison only, left on their published age models):")
+    log.append("  Haq (1987) short-term and long-term sea level, step-4 validation pair")
+    log.append("  Boss & Wilkinson (1991) and Delaney & Boyle reference CCDs, Fig. 2b")
 
     (OUT / "timescale_conversion_report.txt").write_text("\n".join(log) + "\n")
     print("\n".join(log))

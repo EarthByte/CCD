@@ -15,8 +15,7 @@ Sea level (resampled to 0.1 Myr after conversion):
   SL hybrid    splice re-imposed at 66.600 Ma (GTS2020): 1 converted sample(s) crossed back below it and were dropped; gap to the next sample 0.082 Myr
   SL hybrid    dropped 26 sample(s) folded onto a duplicate age
   SL hybrid    -> sealevel_shortterm_hybrid_GTS2020.txt (2051 rows, 0.0-205.0 Ma)
-  Haq ST          0.0-1000000000.0 Ma  from Ogg_2012         n=1796  ages moved: 1151  shift mean  -1.015 Myr, max |4.516| Myr
-  Haq ST       dropped 42 sample(s) folded onto a duplicate age
-  Haq ST       -> Haq_shortterm_hybrid_GTS2020.txt (2051 rows, 0.0-205.0 Ma)
-  Haq87 LT        0.0-1000000000.0 Ma  from Ogg_2012         n=1545  ages moved:  809  shift mean  -0.796 Myr, max |4.521| Myr
-  Haq87 LT     -> Haq87_longterm_GTS2020.txt (2561 rows, 0.0-256.0 Ma)
+
+Not converted (comparison only, left on their published age models):
+  Haq (1987) short-term and long-term sea level, step-4 validation pair
+  Boss & Wilkinson (1991) and Delaney & Boyle reference CCDs, Fig. 2b

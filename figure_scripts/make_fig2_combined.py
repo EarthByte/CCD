@@ -27,7 +27,7 @@ def rd(p,names): return pd.read_csv(p,sep=r"\s+",engine="python",comment="#",hea
 
 # Sea-level curves come from step 0, i.e. normalised to GTS2020.
 sl =rd(CW/"steps/step1_timescale_conversion/outputs/sealevel_shortterm_hybrid_GTS2020.txt",["age","sl"]).sort_values("age")
-haq=rd(CW/"steps/step1_timescale_conversion/outputs/Haq87_longterm_GTS2020.txt",["age","sl"]).sort_values("age")
+haq=rd(CW/"data/sealevel/Haq87_Longterm_v3.txt",["age","sl"]).sort_values("age")
 env=rd(CW/"steps/step4_sealevel_envelope/outputs/sea_level_quantile_envelope_0-205Ma.txt",["age","sl"]).sort_values("age")
 mt =pd.read_csv(CW/"steps/step6_sealevel_ccd_regression/outputs/diagnostics/matched_timeseries.csv")
 rr =pd.read_csv(CW/"steps/step6_sealevel_ccd_regression/outputs/diagnostics/regression_results.csv")

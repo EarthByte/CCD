@@ -23,15 +23,28 @@ or simply `python run_ccd_core.py`, which runs it first.
 | Indian CCD | Dalvand et al. (2025) | GTS2020 | passed through |
 | Hybrid short-term sea level, 0–66.6 Ma | Miller et al. (2024) | GTS2020 | passed through |
 | Hybrid short-term sea level, >66.6 Ma | Haq et al. | GTS2012 | converted |
-| Haq short-term sea level | Haq et al. (1987) | GTS2012 | converted |
-| Haq long-term sea level | Haq et al. (1987) | GTS2012 | converted |
-
-The two Haq curves are the validation pair used by step 4: the envelope operator
-is applied to the short-term record and checked against the published long-term
-curve. Both are converted so that check stays inside one age frame.
 
 A segment that is already on GTS2020 is passed through untouched, so no spurious
 interpolation is introduced where none is needed.
+
+## What is deliberately not converted
+
+Only curves that enter the analysis are converted. Curves used solely for comparison
+keep their published age models:
+
+- the standalone Haq (1987) short-term and long-term sea-level curves, which are the
+  step-4 validation pair. The envelope operator is applied to one and checked against
+  the other, and both are on GTS2012 as published, so the check is already
+  self-consistent. Remapping them changes the reported statistic through resampling
+  alone: r 0.900 to 0.898, RMSE 35.5 to 36.4 m, MAE 27.1 to 27.6 m, with no change to
+  anything the comparison is testing.
+- the Boss & Wilkinson (1991) and Delaney & Boyle reference CCDs plotted in Fig. 2b.
+  Neither of their timescales is carried by `timescales.txt`, so neither could be
+  converted in any case.
+
+Note that the Haq compilation still reaches the analysis, as the pre-66.6 Ma half of
+the hybrid short-term sea-level record, and that half is converted. It is the
+standalone published curves that are left alone.
 
 ## How the ages are mapped
 
@@ -62,8 +75,6 @@ over it, which a 1 Myr grid would destroy.
 ```
 data/ccds_and_oceanbasin_fractions.xlsx            regional CCD columns 0-5
 data/sealevel/Miller_Haq_SeaLevel_ShortTerm_hybrid.tsv
-data/sealevel/Haq_SeaLevel_ShortTerm_hybrid.tsv
-data/sealevel/Haq87_Longterm_v3.txt
 ```
 
 The regional CCDs are read from the spreadsheet rather than from the archived
@@ -79,8 +90,6 @@ ATL_CCD_GTS2020_1my.txt                 Age_Ma, CCD_m       0-65 Ma
 PAC_CCD_GTS2020_1my.txt                                     0-52 Ma
 IND_CCD_GTS2020_1my.txt                                     0-23 Ma
 sealevel_shortterm_hybrid_GTS2020.txt   Age_Ma, Sea_level_m 0-205 Ma, 0.1 Myr
-Haq_shortterm_hybrid_GTS2020.txt                            0-205 Ma, 0.1 Myr
-Haq87_longterm_GTS2020.txt                                  0-256 Ma, 0.1 Myr
 timescale_conversion_report.txt         what moved, and by how much
 timescales.log                          chron table as parsed, from the tool
 ```
@@ -97,14 +106,7 @@ the shift for every segment.
 
 ```
 step3_global_ccd_synthesis   the three regional CCD curves
-step4_sealevel_envelope      hybrid short-term SL, plus both Haq curves for validation
-step7 .../plots              Haq long-term, for the diagnostic plot
-Paper/make_fig2_combined.py  hybrid short-term SL and Haq long-term
+step4_sealevel_envelope      the hybrid short-term sea-level record
+Paper/make_fig2_combined.py  the hybrid short-term sea-level record
 ```
 
-## Known limitation
-
-The two comparison curves plotted in Figure 2b, Boss & Wilkinson (1991) and
-Delaney & Boyle, are shown on their published age models. Neither is on a
-timescale carried by `timescales.txt`, so neither can be converted with this tool.
-They are illustrative comparisons and enter no calculation.

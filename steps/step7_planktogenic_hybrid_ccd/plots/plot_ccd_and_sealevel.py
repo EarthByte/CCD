@@ -13,7 +13,7 @@ Inputs:
     outputs/step4_sealevel_envelope/sea_level_quantile_envelope_0-205Ma.txt (this study SL)
     data/reference_ccd/Boss_Wilkinson_1991_global_CCD_mean.txt
     data/reference_ccd/Global_CCD_Delaney_Boyle.txt
-    steps/step1_timescale_conversion/outputs/Haq87_longterm_GTS2020.txt
+    data/sealevel/Haq87_Longterm_v3.txt   (comparison curve, published GTS2012)
 
 Output:
     outputs/step7_hybrid/CCD_SeaLevel.pdf  (+ .png)
@@ -51,7 +51,7 @@ def main() -> None:
     db = read_table(config.REFERENCE_CCD / "Global_CCD_Delaney_Boyle.txt", names=["Age", "CCD"])
     db["CCD"] = -db["CCD"]
     sl = read_xy(config.SL_ENVELOPE_FULL, names=["Age", "SL"])
-    haq = read_xy(config.GTS2020_HAQ_LONGTERM, names=["Age", "SL"])
+    haq = read_xy(config.SEALEVEL / "Haq87_Longterm_v3.txt", names=["Age", "SL"])
     sl_x, sl_y = _map_sl(sl)
     haq_x, haq_y = _map_sl(haq)
 
