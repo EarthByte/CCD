@@ -89,6 +89,37 @@ def _grid_south_up(path):
         z = np.concatenate([z[:, k:], z[:, :k]], axis=1)
     return z
 
+def _render_signature(cmap, norm, vmin, vmax, cbar_label, cbar_ticks, cbar_extend,
+                      figsize, dpi, central_lon):
+    """Fingerprint of everything that changes how a frame looks.
+
+    Frames are cached by filename alone, so before this existed a new colour map or a
+    new layout was silently ignored and the video was reassembled from frames drawn
+    with the old settings. The signature is stored beside the frames; when it changes,
+    the frames are re-rendered whether or not --force was given.
+    """
+    def _rgba(getter):
+        try:
+            return [round(float(v), 6) for v in getter()]
+        except Exception:
+            return None
+    # Sample the colormap rather than reading .colors, so this works for the discrete
+    # ListedColormap built from a .cpt and for a continuous map such as nuuk alike.
+    parts = {
+        "lut": [[round(float(v), 6) for v in cmap(i / 255.0)] for i in range(0, 256, 4)],
+        "over": _rgba(cmap.get_over), "under": _rgba(cmap.get_under),
+        "bad": _rgba(cmap.get_bad),
+        "bounds": [float(b) for b in norm.boundaries] if norm is not None else None,
+        "vmin": vmin, "vmax": vmax, "cbar_label": cbar_label,
+        "cbar_ticks": None if cbar_ticks is None else [float(t) for t in cbar_ticks],
+        "cbar_extend": cbar_extend, "figsize": list(figsize), "dpi": dpi,
+        "central_lon": central_lon, "cbar_gap_mm": CBAR_GAP_MM, "cbar_h": _CBAR_H,
+        "continent_gray": CONTINENT_GRAY,
+    }
+    blob = json.dumps(parts, sort_keys=True).encode()
+    return hashlib.sha256(blob).hexdigest()
+
+
 def render_video(times, grid_fmt, out_dir, out_prefix, cbar_label,
                  MODEL_DIR, cmap, norm=None, vmin=None, vmax=None,
                  central_lon=15.0, framerate=8, dpi=150,
@@ -101,14 +132,35 @@ def render_video(times, grid_fmt, out_dir, out_prefix, cbar_label,
     sm = ScalarMappable(cmap=cmap, norm=norm)
     if norm is None: sm.set_clim(vmin, vmax)
 
+    sig = _render_signature(cmap, norm, vmin, vmax, cbar_label, cbar_ticks,
+                            cbar_extend, figsize, dpi, central_lon)
+    sig_path = os.path.join(frame_dir, ".render_signature")
+    prev = None
+    if os.path.exists(sig_path):
+        prev = open(sig_path).read().strip()
+    existing = [f for f in os.listdir(frame_dir) if f.startswith("frame_")]
+    if prev is None and existing:
+        # Frames predating the signature file: there is no way to tell what colour map
+        # they were drawn with, so redraw rather than assume. This costs one full
+        # render, once.
+        print(f"  {len(existing)} cached frames carry no render signature; "
+              "redrawing them so the video matches the current colour map")
+        force = True
+    elif prev is not None and prev != sig:
+        print("  colour map or layout has changed since these frames were drawn; "
+              "re-rendering all of them")
+        force = True
+
     n_done = 0
     for T in times:
         out = os.path.join(frame_dir, f"frame_{int(T):04d}.png")
-        if os.path.exists(out) and not force:
-            n_done += 1; continue
         gp_path = grid_fmt.format(t=int(T))
         if not os.path.exists(gp_path):
             print(f"  ! {T} Ma grid missing: {gp_path}"); continue
+        if os.path.exists(out) and not force:
+            if os.path.getmtime(gp_path) <= os.path.getmtime(out):
+                n_done += 1; continue
+            print(f"  {int(T):3d} Ma: grid is newer than the cached frame, re-rendering")
         z = _grid_south_up(gp_path)
         fig = plt.figure(figsize=figsize)
         # Layout. The Mollweide globe is width-limited, so its height is half the map
@@ -142,6 +194,8 @@ def render_video(times, grid_fmt, out_dir, out_prefix, cbar_label,
         fig.savefig(out, dpi=dpi); plt.close(fig)
         n_done += 1
         if int(T) % 10 == 0: print(f"  {int(T):3d} Ma -> {os.path.basename(out)}")
+    with open(sig_path, "w") as fh:
+        fh.write(sig + "\n")
     print(f"  frames ready: {n_done}")
 
     if shutil.which("ffmpeg") is None:
