@@ -97,14 +97,13 @@ supplementary animations; `figures/` holds the rendered output (PNG + PDF).
 |--------|--------|--------|
 | Fig. 1 — regional and area-weighted global CCD, 0–52 Ma | `steps/step3_global_ccd_synthesis` | `figures/Fig1_regional_global_ccd.*` |
 | Fig. 2 — sea-level calibration and hybrid CCD to 170 Ma | `figure_scripts/make_fig2_combined.py` | `figures/Fig2_combined.*` |
-| Fig. 3 — reconstructed carbonate thickness at 0, 35, 50, 80 Ma | `figure_scripts/make_fig3_maps.py` | `figures/Fig3_carbonate_thickness_maps.*` |
+| Fig. 3 — reconstructed carbonate thickness at 0, 25, 115 Ma, with the carbonate budget | `figure_scripts/make_fig3_maps.py` (panel d via `carbonate_budget.py`) | `figures/Fig3_carbonate_thickness_maps.*`, `figures/Fig3_carbonate_budget.csv` |
 | Fig. 4 — CCD vs solid-Earth CO₂ outflux, and the attribution | `figure_scripts/make_fig4_combined.py` | `figures/Fig4_combined.*` |
 | Fig. S1 — regression-method sensitivity | `steps/step6_sealevel_ccd_regression/regression_diagnostics.py` | `figures/FigS1_regression_method_sensitivity.*` |
 | Fig. S2 — modelled vs observed present-day thickness | `steps/step9_carbonate_volume_analysis/08_ground_truth_carbonate_thickness.py` | `figures/FigS2_modelled_vs_observed_thickness.*` |
 | Fig. S3 — residual distribution at 38 sites | `steps/step9_carbonate_volume_analysis` | `figures/FigS3_thickness_residual_histogram.*` |
 | Fig. S4 — residuals by ocean basin | `steps/step9_carbonate_volume_analysis` | `figures/FigS4_thickness_residuals_by_basin.*` |
-| Fig. S5 — carbonate added per Myr vs seafloor area above the CCD | `figure_scripts/make_figS5_carbonate_budget.py` | `figures/FigS5_carbonate_budget.*` |
-| Fig. S6 — net-outflux end-member scenarios | `steps/step10_carbon_cycle_degassing/standalone_plots` | `figures/FigS6_net_outflux_endmembers.*` |
+| Fig. S5 — net-outflux end-member scenarios | `steps/step10_carbon_cycle_degassing/standalone_plots` | `figures/FigS5_net_outflux_endmembers.*` |
 
 `figure_scripts/attribution_closure_analysis.py` performs the attribution
 (correlations, AR1-adjusted significance, incremental R², first differences) and

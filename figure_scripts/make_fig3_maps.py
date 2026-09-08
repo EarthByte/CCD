@@ -84,12 +84,23 @@ model = gplately.PlateReconstruction(rotm, topology_features=topo, static_polygo
 # grids that are still in present-day coordinates.
 GRIDS_ARE_RECONSTRUCTED = True
 
-TIMES=[0,35,50,80]; LABELS=["a","b","c","d"]
+# Three maps stacked vertically, with the carbonate budget below them at the same
+# width. A Mollweide map is twice as wide as it is tall, so at the journal's full
+# 190 mm column three of them plus the budget would run past the page; the figure is
+# sized to fit a page instead, 117 mm wide by about 225 mm tall.
+TIMES=[0,25,115]; LABELS=["a","b","c"]
 proj=ccrs.Mollweide(central_longitude=0)
-fig,axes=plt.subplots(2,2, figsize=(10.4,6.1), subplot_kw={"projection":proj})
-fig.subplots_adjust(left=0.01,right=0.99,top=0.985,bottom=0.11,wspace=0.04,hspace=0.02)
+# The left and right margins have to hold the budget panel's two axis labels, and the
+# maps use the same box so every panel is the same width. Row 4 is an empty spacer that
+# the shared colour bar sits in, so it cannot land on top of the last map.
+fig=plt.figure(figsize=(5.4,8.6))
+gs=fig.add_gridspec(5,1,height_ratios=[1.0,1.0,1.0,0.21,0.72],
+                    left=0.130,right=0.855,top=0.995,bottom=0.070,hspace=0.05)
+axes=[fig.add_subplot(gs[i,0],projection=proj) for i in range(3)]
+axd=fig.add_subplot(gs[4,0])
+_spacer=fig.add_subplot(gs[3,0]); _spacer.axis("off")
 
-for ax,T,lab in zip(axes.ravel(),TIMES,LABELS):
+for ax,T,lab in zip(axes,TIMES,LABELS):
     t0=time.time()
     ax.set_global(); ax.spines["geo"].set_linewidth(0.7)
     ax.set_facecolor("0.74")   # any cell with no grid data reads as continental crust, not white
@@ -125,22 +136,40 @@ for ax,T,lab in zip(axes.ravel(),TIMES,LABELS):
         ax.plot([-180, -174], [_lat, _lat], transform=ccrs.PlateCarree(),
                 color="black", lw=0.9, solid_capstyle="butt", zorder=9)
         _t = "0\u00b0" if _lat == 0 else f"{abs(_lat)}\u00b0{'N' if _lat > 0 else 'S'}"
-        ax.text(-171, _lat, _t, transform=ccrs.PlateCarree(), fontsize=7.5,
+        ax.text(-171, _lat, _t, transform=ccrs.PlateCarree(), fontsize=6.0,
                 va="center", ha="left", zorder=10,
                 path_effects=[_pe.withStroke(linewidth=1.8, foreground="white")])
     ax.text(0.015,0.985, f"{lab}", transform=ax.transAxes, fontsize=13, fontweight="bold",
             va="top", ha="left", zorder=10)
     # age label shifted ~4 mm left of its former position so it clears the Mollweide outline
     _panel_mm = ax.get_position().width*fig.get_size_inches()[0]*25.4
-    ax.text(0.145-4.0/_panel_mm, 0.972, f"{T} Ma", transform=ax.transAxes, fontsize=12,
+    ax.text(0.145-4.0/_panel_mm, 0.972, f"{T} Ma", transform=ax.transAxes, fontsize=10,
             va="top", ha="left", zorder=10)
     print(f"{T} Ma done {round(time.time()-t0,1)}s")
 
-# shared colorbar
-cax=fig.add_axes([0.24,0.065,0.52,0.028])
+# shared colorbar for the three maps, inside the spacer row
+_sp=_spacer.get_position()
+cax=fig.add_axes([_sp.x0+0.17*_sp.width, _sp.y0+0.62*_sp.height, 0.66*_sp.width, 0.009])
 sm=ScalarMappable(cmap=cmap,norm=norm)
 cb=fig.colorbar(sm, cax=cax, orientation="horizontal", extend="max", spacing="proportional")
-cb.set_label("Compacted carbonate sediment thickness (m)", fontsize=10)
-cb.set_ticks([0,10,20,30,40,50,100,160,210,270,320]); cb.ax.tick_params(labelsize=8)
-for ext in ("png","pdf"): fig.savefig(OUT/f"Fig3_carbonate_thickness_maps.{ext}", dpi=300, bbox_inches="tight")
+cb.set_label("Compacted carbonate sediment thickness (m)", fontsize=7.5, labelpad=2)
+# The 0-50 m bands are narrow on a proportional bar, so labelling every one of them
+# ran the numbers together; label every second.
+cb.set_ticks([0,20,40,100,160,210,270,320]); cb.ax.tick_params(labelsize=6.5, pad=1.5)
+
+# (d) the carbonate budget, drawn by carbonate_budget.py so the panel and the data
+# file cannot drift apart
+import importlib.util as _ilu
+_spec=_ilu.spec_from_file_location("carbonate_budget", _HERE/"carbonate_budget.py")
+_cb=_ilu.module_from_spec(_spec); _spec.loader.exec_module(_cb)
+_series=_cb.budget_series()
+_bx=_cb.draw_budget(axd, _series, label_size=7.5, tick_size=6.5)
+_cb.write_csv(_series)
+axd.text(-0.135,1.02,"d",transform=axd.transAxes,fontsize=13,fontweight="bold",
+         va="bottom",ha="left")
+print(f"  budget panel: r = {_series['r']:.2f} between net gain and area above the CCD")
+_bad=_cb.text_collisions(fig,[(axd,True),(_bx,False)])
+print("  text collisions (panel d): "+(", ".join(_bad) if _bad else "none"))
+
+for ext in ("png","pdf"): fig.savefig(OUT/f"Fig3_carbonate_thickness_maps.{ext}", dpi=300)
 print("saved Fig3 ->", OUT/"Fig3_carbonate_thickness_maps.png")

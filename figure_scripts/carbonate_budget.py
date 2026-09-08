@@ -1,7 +1,10 @@
 #!/usr/bin/env python3
 """
-Figure S5 - carbonate added per million years, against the seafloor area available
-above the CCD, at 1 Myr resolution from 170 Ma to the present.
+The carbonate budget: net carbonate volume gain per million years against the seafloor
+area available above the CCD, at 1 Myr resolution from 170 Ma to the present.
+
+Drawn as panel (d) of Figure 3 by make_fig3_maps.py, which calls draw_budget(). Run
+this file directly to (re)write the data file on its own.
 
 Left axis
     Net carbonate volume gain per Myr, V(t) - V(t+1), smoothed with a Gaussian of
@@ -37,8 +40,7 @@ Inputs:
         Alfonso2024_pybacktrack_merged_paleobathymetry/paleobathymetry_{t}Ma.nc
     Figures/CCD_hybrid_DM2026.txt
 
-Output: Figures/FigS5_carbonate_budget.{png,pdf}
-        Figures/FigS5_carbonate_budget.csv    (the plotted series)
+Output: Figures/Fig3_carbonate_budget.csv    (the plotted series)
 """
 from __future__ import annotations
 
@@ -47,9 +49,6 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import xarray as xr
-import matplotlib
-matplotlib.use("Agg")
-import matplotlib.pyplot as plt
 
 _HERE = Path(__file__).resolve().parent
 
@@ -147,75 +146,81 @@ def area_above_ccd(times) -> np.ndarray:
     return out
 
 
-def main() -> None:
+def budget_series() -> dict:
+    """The plotted series. Cheap enough (about 7 s) to recompute wherever it is drawn,
+    so nothing has to trust a cached copy."""
     if not VOLCSV.exists():
         raise SystemExit(f"missing {VOLCSV}; run pipeline_carbon/02_carbonate_volume_stats.py")
     vol = pd.read_csv(VOLCSV).sort_values("Age_Ma")
     vol = vol[vol["Age_Ma"] <= TMAX]
     age = vol["Age_Ma"].to_numpy(float)
     V = vol["volume_1e6km3_mean"].to_numpy(float)
-    # V(t) - V(t+1): carbonate added during the Myr ending at t. Ages ascend, so this
-    # is -diff. Reported at the midpoint of each interval.
-    added = -np.diff(V)
-    added_age = 0.5 * (age[:-1] + age[1:])
-    added_smooth = smooth_gaussian(added, SMOOTH_FWHM_MYR)
+    # V(t) - V(t+1) is the net gain during the Myr ending at t. Ages ascend, so this is
+    # -diff, reported at the midpoint of each interval.
+    raw = -np.diff(V)
+    gain_age = 0.5 * (age[:-1] + age[1:])
+    gain = smooth_gaussian(raw, SMOOTH_FWHM_MYR)
+    area = area_above_ccd([int(t) for t in age])
+    ok = np.isfinite(area[:-1]) & np.isfinite(gain)
+    r = float(np.corrcoef(area[:-1][ok], gain[ok])[0, 1])
+    return dict(age=age, V=V, gain_age=gain_age, gain=gain, raw=raw, area=area, r=r)
 
-    times = [int(t) for t in age]
-    area = area_above_ccd(times)
 
-    fig, ax = plt.subplots(figsize=(7.0, 3.4))
-    ax.plot(added_age, added_smooth, color=VOL_COLOUR, lw=1.6)
+def draw_budget(ax, s: dict, label_size: float = PT_LABEL, tick_size: float = PT_TICK):
+    """Draw the budget onto an existing axes, returning the twinned right-hand axes.
+
+    Shared so that the panel in Figure 3 of the paper and any standalone rendering come
+    from one piece of code rather than two that can drift apart.
+    """
+    ax.plot(s["gain_age"], s["gain"], color=VOL_COLOUR, lw=1.6)
     ax.set_xlim(TMAX, 0)
-    ax.set_xlabel("Age (Ma)", fontsize=PT_LABEL)
-    ax.set_ylabel("Net carbonate volume gain (10$^6$ km$^3$ Myr$^{-1}$)", fontsize=PT_LABEL,
-                  color=VOL_COLOUR)
+    ax.set_xlabel("Age (Ma)", fontsize=label_size)
+    ax.set_ylabel("Net carbonate volume gain\n(10$^6$ km$^3$ Myr$^{-1}$)",
+                  fontsize=label_size, color=VOL_COLOUR)
     ax.tick_params(axis="y", labelcolor=VOL_COLOUR)
     ax.axhline(0, color="0.75", lw=0.6, zorder=0)
 
     bx = ax.twinx()
-    bx.plot(age, area, color=AREA_COLOUR, lw=1.4, ls=(0, (5, 2)))
-    bx.set_ylabel("Seafloor area above the CCD (10$^6$ km$^2$)", fontsize=PT_LABEL,
-                  color=AREA_COLOUR)
+    bx.plot(s["age"], s["area"], color=AREA_COLOUR, lw=1.4, ls=(0, (5, 2)))
+    bx.set_ylabel("Seafloor area above\nthe CCD (10$^6$ km$^2$)",
+                  fontsize=label_size, color=AREA_COLOUR)
     bx.tick_params(axis="y", labelcolor=AREA_COLOUR)
     bx.set_ylim(0, None)
-
     for a in (ax, bx):
-        a.tick_params(labelsize=PT_TICK)
+        a.tick_params(labelsize=tick_size)
+        a.spines["top"].set_visible(False)
     ax.grid(axis="x", color="0.9", lw=0.4)
     ax.set_axisbelow(True)
-    ax.spines["top"].set_visible(False)
-    bx.spines["top"].set_visible(False)
+    return bx
 
-    ok = np.isfinite(area[:-1]) & np.isfinite(added_smooth)
-    r = float(np.corrcoef(area[:-1][ok], added_smooth[ok])[0, 1])
-    print(f"  correlation of net carbonate gain with area above the CCD: r = {r:.2f}")
 
-    out_csv = FIGDIR / "FigS5_carbonate_budget.csv"
-    smooth_col = np.concatenate([[np.nan], added_smooth])       # aligned to Age_Ma
-    raw_col = np.concatenate([[np.nan], added])
-    pd.DataFrame({"Age_Ma": age, "volume_1e6km3": V,
-                  "net_gain_1e6km3_per_myr_raw": raw_col,
-                  "net_gain_1e6km3_per_myr_smoothed": smooth_col,
-                  "area_above_CCD_1e6km2": area}).to_csv(out_csv, index=False,
-                                                         float_format="%.4f")
-    print(f"wrote {out_csv}")
+def write_csv(s: dict) -> Path:
+    out_csv = FIGDIR / "Fig3_carbonate_budget.csv"
+    pd.DataFrame({"Age_Ma": s["age"], "volume_1e6km3": s["V"],
+                  "net_gain_1e6km3_per_myr_raw": np.concatenate([[np.nan], s["raw"]]),
+                  "net_gain_1e6km3_per_myr_smoothed": np.concatenate([[np.nan], s["gain"]]),
+                  "area_above_CCD_1e6km2": s["area"]}).to_csv(
+        out_csv, index=False, float_format="%.4f")
+    return out_csv
 
-    fig.subplots_adjust(left=0.105, right=0.885, top=0.965, bottom=0.165)
+
+def text_collisions(fig, pairs) -> list:
+    """Overlapping drawn text. `pairs` is a list of (axes, is_primary): x ticks are read
+    only from the primary of a twinned pair, and ticks outside the view are skipped,
+    since matplotlib keeps those and they would register as phantom overlaps."""
     fig.canvas.draw()
     rr = fig.canvas.get_renderer()
-    def live_ticklabels(axis, lo, hi):
-        """Tick labels that are actually drawn: matplotlib keeps the ones for ticks
-        outside the view limits, and those otherwise register as phantom collisions."""
-        lo, hi = min(lo, hi), max(lo, hi)
-        return [lab for loc, lab in zip(axis.get_ticklocs(), axis.get_ticklabels())
-                if lo <= loc <= hi and lab.get_text().strip() and lab.get_visible()]
 
-    # On a twin axis both axes carry the same x ticks in the same place, so take the
-    # x ticks from the primary axis only; otherwise every one collides with its twin.
-    cand = list(ax.texts) + [ax.xaxis.label, ax.yaxis.label, bx.yaxis.label] + list(bx.texts)
-    cand += live_ticklabels(ax.xaxis, *ax.get_xlim())
-    cand += live_ticklabels(ax.yaxis, *ax.get_ylim())
-    cand += live_ticklabels(bx.yaxis, *bx.get_ylim())
+    def live(axis, lim):
+        lo, hi = min(lim), max(lim)
+        return [l for loc, l in zip(axis.get_ticklocs(), axis.get_ticklabels())
+                if lo <= loc <= hi and l.get_text().strip() and l.get_visible()]
+
+    cand = []
+    for a, primary in pairs:
+        cand += list(a.texts) + [a.yaxis.label] + live(a.yaxis, a.get_ylim())
+        if primary:
+            cand += [a.xaxis.label] + live(a.xaxis, a.get_xlim())
     items = []
     for t in cand:
         if not (t.get_text().strip() and t.get_visible()):
@@ -223,18 +228,22 @@ def main() -> None:
         e = t.get_window_extent(renderer=rr)
         if e.width > 0 and e.height > 0:
             items.append((t, e))
-    bad = [f"{items[i][0].get_text()!r} / {items[j][0].get_text()!r}"
-           for i in range(len(items)) for j in range(i + 1, len(items))
-           if items[i][1].overlaps(items[j][1])
-           and min(items[i][1].x1, items[j][1].x1) - max(items[i][1].x0, items[j][1].x0) > 1.0
-           and min(items[i][1].y1, items[j][1].y1) - max(items[i][1].y0, items[j][1].y0) > 1.0]
-    print("  text collisions: " + (", ".join(bad) if bad else "none"))
+    bad = []
+    for i in range(len(items)):
+        for j in range(i + 1, len(items)):
+            a_, b_ = items[i][1], items[j][1]
+            if (a_.overlaps(b_) and min(a_.x1, b_.x1) - max(a_.x0, b_.x0) > 1.0
+                    and min(a_.y1, b_.y1) - max(a_.y0, b_.y0) > 1.0):
+                bad.append(f"{items[i][0].get_text()!r} / {items[j][0].get_text()!r}")
+    return bad
 
-    for ext in ("png", "pdf"):
-        out = FIGDIR / f"FigS5_carbonate_budget.{ext}"
-        fig.savefig(out, dpi=400 if ext == "png" else None)
-        print(f"wrote {out}")
-    plt.close(fig)
+
+def main() -> None:
+    """Standalone use writes only the data file. The figure itself is now panel (d) of
+    Figure 3 in the paper, drawn by make_fig3_maps.py through draw_budget()."""
+    s = budget_series()
+    print(f"  correlation of net carbonate gain with area above the CCD: r = {s['r']:.2f}")
+    print(f"wrote {write_csv(s)}")
 
 
 if __name__ == "__main__":
