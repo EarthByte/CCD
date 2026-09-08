@@ -15,7 +15,7 @@ to -180..180 to match the plotting extent.
 Requires: gplately, pygplates, cartopy, xarray, matplotlib, ffmpeg on PATH.
 """
 from __future__ import annotations
-import glob, os, subprocess, shutil, time as _t
+import glob, hashlib, json, os, subprocess, shutil, time as _t
 import numpy as np, xarray as xr
 import matplotlib; matplotlib.use("Agg")
 import matplotlib.pyplot as plt
