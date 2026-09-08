@@ -88,6 +88,7 @@ GRIDS_ARE_RECONSTRUCTED = True
 # width. A Mollweide map is twice as wide as it is tall, so at the journal's full
 # 190 mm column three of them plus the budget would run past the page; the figure is
 # sized to fit a page instead, 117 mm wide by about 225 mm tall.
+OUT_DPI = 300      # the fit measures at this dpi too, so the two cannot drift
 TIMES=[0,25,115]; LABELS=["a","b","c"]
 proj=ccrs.Mollweide(central_longitude=0)
 # The maps get the full column. Panel (d) starts from the same cell and is then fitted
@@ -177,17 +178,25 @@ def _ink_span(_axs, _pad=2):
     """Left and right edge of these axes' drawn ink, as fractions of figure width.
 
     Measured off the rendered canvas, not from get_tightbbox: that pads around glyph
-    boxes, which left the panel a few per cent wider than the maps.
+    boxes, which left the panel a few per cent wider than the maps. The canvas is
+    rendered at the dpi the figure is saved at, because glyph advances are hinted to
+    whole pixels - measured at the default 100 dpi, the two-line y-label came out
+    narrower than it renders at 300 and the panel was fitted too far left.
     """
-    fig.canvas.draw()
-    _buf = np.asarray(fig.canvas.buffer_rgba())[..., :3].mean(axis=2)
-    _H, _W = _buf.shape
-    _r = fig.canvas.get_renderer()
-    _bb = [a.get_tightbbox(_r) for a in _axs]
-    _y0 = max(0, int(_H - max(b.y1 for b in _bb)) - _pad)
-    _y1 = min(_H, int(_H - min(b.y0 for b in _bb)) + _pad)
-    _cols = np.where((_buf[_y0:_y1, :] < 245).any(axis=0))[0]
-    return _cols.min()/_W, (_cols.max()+1)/_W
+    _old_dpi = fig.get_dpi()
+    fig.set_dpi(OUT_DPI)
+    try:
+        fig.canvas.draw()
+        _buf = np.asarray(fig.canvas.buffer_rgba())[..., :3].mean(axis=2)
+        _H, _W = _buf.shape
+        _r = fig.canvas.get_renderer()
+        _bb = [a.get_tightbbox(_r) for a in _axs]
+        _y0 = max(0, int(_H - max(b.y1 for b in _bb)) - _pad)
+        _y1 = min(_H, int(_H - min(b.y0 for b in _bb)) + _pad)
+        _cols = np.where((_buf[_y0:_y1, :] < 245).any(axis=0))[0]
+        return _cols.min()/_W, (_cols.max()+1)/_W
+    finally:
+        fig.set_dpi(_old_dpi)
 
 _t0, _t1 = _ink_span(axes[:1])
 for _ in range(5):
@@ -216,5 +225,5 @@ print(f"  budget panel: r = {_series['r']:.2f} between net gain and area above t
 _bad=_cb.text_collisions(fig,[(axd,True),(_bx,False),(cax,False)])
 print("  text collisions (panel d): "+(", ".join(_bad) if _bad else "none"))
 
-for ext in ("png","pdf"): fig.savefig(OUT/f"Fig3_carbonate_thickness_maps.{ext}", dpi=300)
+for ext in ("png","pdf"): fig.savefig(OUT/f"Fig3_carbonate_thickness_maps.{ext}", dpi=OUT_DPI)
 print("saved Fig3 ->", OUT/"Fig3_carbonate_thickness_maps.png")
