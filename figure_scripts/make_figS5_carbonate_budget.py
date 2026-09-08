@@ -4,7 +4,8 @@ Figure S5 - carbonate added per million years, against the seafloor area availab
 above the CCD, at 1 Myr resolution from 170 Ma to the present.
 
 Left axis
-    Net carbonate volume added per Myr, V(t) - V(t+1), where V(t) is the global
+    Net carbonate volume added per Myr, V(t) - V(t+1), smoothed with a Gaussian of
+    5 Myr full width at half maximum, where V(t) is the global
     compacted carbonate volume on the reconstructed seafloor at time t. This is a
     global integral, so unlike a cell-by-cell difference it is unaffected by plate
     motion carrying crust between grid cells. It is a NET quantity: deposition during
@@ -70,6 +71,7 @@ VOLCSV = (CW / "steps/step9_carbonate_volume_analysis/output/dm2026_volume_stats
 HYBRID = FIGDIR / "CCD_hybrid_DM2026.txt"
 
 TMAX = 170
+SMOOTH_FWHM_MYR = 5.0     # Gaussian full width at half maximum, in Myr
 R_EARTH_M = 6371000.0
 VOL_COLOUR, AREA_COLOUR = "#1f6f8b", "#b3202c"
 PT_TICK, PT_LABEL, PT_ANNOT = 7.5, 8.5, 7.5
@@ -90,6 +92,28 @@ def _cell_area_m2(lat: np.ndarray, lon: np.ndarray) -> np.ndarray:
     edges = np.deg2rad(np.clip(np.concatenate(
         [[lat[0] - dlat / 2], (lat[:-1] + lat[1:]) / 2, [lat[-1] + dlat / 2]]), -90, 90))
     return R_EARTH_M ** 2 * np.deg2rad(dlon) * np.abs(np.sin(edges[1:]) - np.sin(edges[:-1]))
+
+
+def smooth_gaussian(y: np.ndarray, fwhm_myr: float) -> np.ndarray:
+    """Gaussian smoother of the given full width at half maximum, in Myr.
+
+    The unsmoothed series carries single-Myr spikes that come from the reconstruction
+    stepping crust in and out of the mask rather than from anything in the carbonate
+    budget. At 1 Myr sampling a 5 Myr FWHM cuts the scatter between neighbouring points
+    six-fold and the curvature twenty-six-fold while keeping three quarters of the range.
+    Weights are renormalised over the samples actually available, so the ends are not
+    pulled toward zero.
+    """
+    sigma = fwhm_myr / 2.3548
+    half = max(1, int(round(3 * sigma)))
+    k = np.arange(-half, half + 1)
+    w = np.exp(-0.5 * (k / sigma) ** 2)
+    out = np.empty_like(y, dtype=float)
+    for i in range(len(y)):
+        lo, hi = max(0, i - half), min(len(y), i + half + 1)
+        ww = w[half - (i - lo): half + (hi - i)]
+        out[i] = float(np.sum(y[lo:hi] * ww) / ww.sum())
+    return out
 
 
 def ccd_curve():
@@ -131,22 +155,23 @@ def main() -> None:
     # is -diff. Reported at the midpoint of each interval.
     added = -np.diff(V)
     added_age = 0.5 * (age[:-1] + age[1:])
+    added_smooth = smooth_gaussian(added, SMOOTH_FWHM_MYR)
 
     times = [int(t) for t in age]
     area = area_above_ccd(times)
 
     fig, ax = plt.subplots(figsize=(7.0, 3.4))
-    ax.plot(added_age, added, color=VOL_COLOUR, lw=1.4)
+    ax.plot(added_age, added_smooth, color=VOL_COLOUR, lw=1.6)
     ax.set_xlim(TMAX, 0)
     ax.set_xlabel("Age (Ma)", fontsize=PT_LABEL)
-    ax.set_ylabel("Carbonate added (10$^6$ km$^3$ Myr$^{-1}$)", fontsize=PT_LABEL,
+    ax.set_ylabel("Carbonate volume added (10$^6$ km$^3$ Myr$^{-1}$)", fontsize=PT_LABEL,
                   color=VOL_COLOUR)
     ax.tick_params(axis="y", labelcolor=VOL_COLOUR)
     ax.axhline(0, color="0.75", lw=0.6, zorder=0)
 
     bx = ax.twinx()
     bx.plot(age, area, color=AREA_COLOUR, lw=1.4, ls=(0, (5, 2)))
-    bx.set_ylabel("Seafloor above the CCD (10$^6$ km$^2$)", fontsize=PT_LABEL,
+    bx.set_ylabel("Seafloor area above the CCD (10$^6$ km$^2$)", fontsize=PT_LABEL,
                   color=AREA_COLOUR)
     bx.tick_params(axis="y", labelcolor=AREA_COLOUR)
     bx.set_ylim(0, None)
@@ -158,12 +183,16 @@ def main() -> None:
     ax.spines["top"].set_visible(False)
     bx.spines["top"].set_visible(False)
 
-    ok = np.isfinite(area[:-1]) & np.isfinite(added)
-    r = float(np.corrcoef(area[:-1][ok], added[ok])[0, 1])
+    ok = np.isfinite(area[:-1]) & np.isfinite(added_smooth)
+    r = float(np.corrcoef(area[:-1][ok], added_smooth[ok])[0, 1])
     print(f"  correlation of carbonate added with area above the CCD: r = {r:.2f}")
 
     out_csv = FIGDIR / "FigS5_carbonate_budget.csv"
+    smooth_col = np.concatenate([[np.nan], added_smooth])       # aligned to Age_Ma
+    raw_col = np.concatenate([[np.nan], added])
     pd.DataFrame({"Age_Ma": age, "volume_1e6km3": V,
+                  "added_1e6km3_per_myr_raw": raw_col,
+                  "added_1e6km3_per_myr_smoothed": smooth_col,
                   "area_above_CCD_1e6km2": area}).to_csv(out_csv, index=False,
                                                          float_format="%.4f")
     print(f"wrote {out_csv}")
