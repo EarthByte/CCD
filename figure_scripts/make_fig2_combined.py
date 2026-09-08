@@ -86,12 +86,12 @@ axb.plot(pred["age"],pred["ccd"],color="cadetblue",lw=1.7,zorder=3,label="Sealev
 axb.plot(hyb["age"],hyb["ccd"],color="mediumturquoise",lw=2.6,zorder=4,label="Hybrid CCD")
 axb.plot(bw["age"],bw["ccd"],color="#ee7600",lw=1.7,zorder=3,label="Boss & Wilkinson (1991)")
 axb.plot(db["age"],db["ccd"],color="#8b008b",lw=1.7,zorder=3,label="Delaney & Boyle")
-# paleoceanographic events discussed in the text
-EVENTS=[(134.0,"WE"),(115.0,"LACI"),(93.9,"OAE2"),(56.0,"PETM"),(33.9,"EOT"),(15.2,"MMCO")]
-for eage,elab in EVENTS:
-    axb.axvline(eage,color="0.45",ls=":",lw=1.0,zorder=2)
-    axb.text(eage,1.005,elab,transform=axb.get_xaxis_transform(),fontsize=8.5,color="0.30",
-             ha="center",va="bottom",zorder=6)
+# Paleoceanographic events discussed in the text. The list and its styling live in
+# paper_events.py so this panel and Fig. 3d cannot drift apart.
+import importlib.util as _ilu
+_espec=_ilu.spec_from_file_location("paper_events", _HERE/"paper_events.py")
+_ev=_ilu.module_from_spec(_espec); _espec.loader.exec_module(_ev)
+_ev.draw_events(axb, fontsize=8.5)
 axb.set_xlim(AGEMAX,0); axb.set_ylim(-5300,-2500)
 axb.set_xlabel("Age (Ma)",fontsize=13); axb.set_ylabel("CCD (m)",fontsize=13); axb.tick_params(labelsize=11)
 axr=axb.twinx(); axr.set_ylim(0,300)

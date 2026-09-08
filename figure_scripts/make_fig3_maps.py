@@ -93,8 +93,8 @@ proj=ccrs.Mollweide(central_longitude=0)
 # The left and right margins have to hold the budget panel's two axis labels, and the
 # maps use the same box so every panel is the same width. Row 4 is an empty spacer that
 # the shared colour bar sits in, so it cannot land on top of the last map.
-fig=plt.figure(figsize=(5.4,8.6))
-gs=fig.add_gridspec(5,1,height_ratios=[1.0,1.0,1.0,0.21,0.72],
+fig=plt.figure(figsize=(5.4,8.85))
+gs=fig.add_gridspec(5,1,height_ratios=[1.0,1.0,1.0,0.34,0.72],
                     left=0.130,right=0.855,top=0.995,bottom=0.070,hspace=0.05)
 axes=[fig.add_subplot(gs[i,0],projection=proj) for i in range(3)]
 axd=fig.add_subplot(gs[4,0])
@@ -149,7 +149,8 @@ for ax,T,lab in zip(axes,TIMES,LABELS):
 
 # shared colorbar for the three maps, inside the spacer row
 _sp=_spacer.get_position()
-cax=fig.add_axes([_sp.x0+0.17*_sp.width, _sp.y0+0.62*_sp.height, 0.66*_sp.width, 0.009])
+# High in the spacer row: its lower part holds panel (d) event labels.
+cax=fig.add_axes([_sp.x0+0.17*_sp.width, _sp.y0+0.80*_sp.height, 0.66*_sp.width, 0.009])
 sm=ScalarMappable(cmap=cmap,norm=norm)
 cb=fig.colorbar(sm, cax=cax, orientation="horizontal", extend="max", spacing="proportional")
 cb.set_label("Compacted carbonate sediment thickness (m)", fontsize=7.5, labelpad=2)
@@ -168,7 +169,7 @@ _cb.write_csv(_series)
 axd.text(-0.135,1.02,"d",transform=axd.transAxes,fontsize=13,fontweight="bold",
          va="bottom",ha="left")
 print(f"  budget panel: r = {_series['r']:.2f} between net gain and area above the CCD")
-_bad=_cb.text_collisions(fig,[(axd,True),(_bx,False)])
+_bad=_cb.text_collisions(fig,[(axd,True),(_bx,False),(cax,False)])
 print("  text collisions (panel d): "+(", ".join(_bad) if _bad else "none"))
 
 for ext in ("png","pdf"): fig.savefig(OUT/f"Fig3_carbonate_thickness_maps.{ext}", dpi=300)

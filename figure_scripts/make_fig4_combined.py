@@ -25,8 +25,6 @@ FIGDIR.mkdir(parents=True, exist_ok=True)
 FIG = str(FIGDIR)
 D = pd.read_csv(_HERE/"attribution_matched_series.csv")
 age=D["age"].to_numpy(); ccd=-D["depth"].to_numpy()
-events={"OAE1a ~120":120,"Weissert ~133":133,"OAE2 ~93.9":93.9,"K\u2013Pg 66":66,
-        "PETM 56":56,"EOT ~34":34,"MMCO ~15":15}
 
 # Two panels. The lag panel is gone: carbonate compensation restores ocean saturation
 # in about 5,000-10,000 years, whether the perturbation is a sea-level-driven shift in
@@ -46,13 +44,14 @@ ax2.plot(age,D["MOR_ridge"],color="#0072b2",lw=1.6,label="Mid-ocean ridge outgas
 ax2.plot(age,D["rift"],color="#9467bd",lw=1.2,label="Rift outgassing")
 ax2.plot(age,D["carb_platform"],color="#8c564b",lw=1.2,label="Arc outgassing (carbonate platforms)")
 ax2.set_ylabel("CO$_2$ outflux (Mt C yr$^{-1}$)")
-# Event labels sit vertically above the frame. Horizontal ones collided in pairs
-# (Weissert/OAE1a and K-Pg/PETM) once the figure was narrowed to the journal column
-# width, and at 45 degrees they still did; vertical text cannot crowd horizontally.
-for lbl,a in events.items():
-    axa.axvline(a,color="0.7",lw=0.8,ls=":")
-    axa.text(a,1.015,lbl,transform=axa.get_xaxis_transform(),rotation=90,
-             ha="center",va="bottom",fontsize=8.5,color="0.35")
+# Events, ages and styling come from paper_events.py, shared with Figs 2b and 3d so the
+# three panels cannot drift apart. They had: this panel previously carried a different
+# set, with the Valanginian event at 133 Ma against 134 Ma in Fig. 2b, an early Aptian
+# event at 120 Ma against 115 Ma, and a K-Pg line the other panels lacked.
+import importlib.util as _ilu
+_espec=_ilu.spec_from_file_location("paper_events", _HERE/"paper_events.py")
+_ev=_ilu.module_from_spec(_espec); _espec.loader.exec_module(_ev)
+_ev.draw_events(axa, fontsize=8.5)
 l1,la1=axa.get_legend_handles_labels(); l2,la2=ax2.get_legend_handles_labels()
 # Legend on the LEFT, with the top of the box at -3450 m on the CCD axis. Set by
 # depth rather than by axes fraction so it stays put if the y-limits change.

@@ -166,7 +166,8 @@ def budget_series() -> dict:
     return dict(age=age, V=V, gain_age=gain_age, gain=gain, raw=raw, area=area, r=r)
 
 
-def draw_budget(ax, s: dict, label_size: float = PT_LABEL, tick_size: float = PT_TICK):
+def draw_budget(ax, s: dict, label_size: float = PT_LABEL, tick_size: float = PT_TICK,
+                events: bool = True, event_size: float = 6.5):
     """Draw the budget onto an existing axes, returning the twinned right-hand axes.
 
     Shared so that the panel in Figure 3 of the paper and any standalone rendering come
@@ -191,6 +192,13 @@ def draw_budget(ax, s: dict, label_size: float = PT_LABEL, tick_size: float = PT
         a.spines["top"].set_visible(False)
     ax.grid(axis="x", color="0.9", lw=0.4)
     ax.set_axisbelow(True)
+    if events:
+        # Same events, ages and styling as Fig. 2b, from the shared list.
+        import importlib.util as ilu
+        spec = ilu.spec_from_file_location("paper_events", _HERE / "paper_events.py")
+        ev = ilu.module_from_spec(spec)
+        spec.loader.exec_module(ev)
+        ev.draw_events(ax, fontsize=event_size)
     return bx
 
 
