@@ -229,7 +229,10 @@ def run(ccd_path, sea_path, outdir, n_boot=10000, block_len=7, max_lag=10) -> Di
     ax.set_title(f"Sensitivity to regression method, 0-52 Ma (r={rma['r']:.2f}, R2={rma['r2']:.2f})")
     ax.legend(frameon=False, fontsize=8.5)
     fig.tight_layout()
-    save_matplotlib_figure(fig, "step6_regression_method_sensitivity", dpi=300, step="step6")
+    # This diagnostic IS Figure S1 of the supplement, so it goes straight into the
+    # paper's figure folder as well - no manual copy step.
+    save_matplotlib_figure(fig, "step6_regression_method_sensitivity", dpi=300, step="step6",
+                           paper_name="FigS1_regression_method_sensitivity")
     plt.close(fig)
 
     # detrended scatter (shared long-term trend removed from both records)

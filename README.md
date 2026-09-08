@@ -99,10 +99,10 @@ supplementary animations; `figures/` holds the rendered output (PNG + PDF).
 | Fig. 2 — sea-level calibration and hybrid CCD to 170 Ma | `figure_scripts/make_fig2_combined.py` | `figures/Fig2_combined.*` |
 | Fig. 3 — reconstructed carbonate thickness at 0, 35, 50, 80 Ma | `figure_scripts/make_fig3_maps.py` | `figures/Fig3_carbonate_thickness_maps.*` |
 | Fig. 4 — CCD vs solid-Earth CO₂ outflux, and the attribution | `figure_scripts/make_fig4_combined.py` | `figures/Fig4_combined.*` |
-| Fig. S1 — regression-method sensitivity | `steps/step6_sealevel_ccd_regression/regression_diagnostics.py` | `figures/regression_method_sensitivity.*` |
-| Fig. S2 — modelled vs observed present-day thickness | `steps/step9_carbonate_volume_analysis/ground_truth_carbonate_thickness.py` | `figures/map_obs_vs_modelled_carbonate_thickness.*` |
-| Fig. S3 — residual distribution at 38 sites | `steps/step9_carbonate_volume_analysis` | `figures/ground_truth_difference_histogram.*` |
-| Fig. S4 — residuals by ocean basin | `steps/step9_carbonate_volume_analysis` | `figures/ground_truth_difference_boxplot_by_ocean.*` |
+| Fig. S1 — regression-method sensitivity | `steps/step6_sealevel_ccd_regression/regression_diagnostics.py` | `figures/FigS1_regression_method_sensitivity.*` |
+| Fig. S2 — modelled vs observed present-day thickness | `steps/step9_carbonate_volume_analysis/08_ground_truth_carbonate_thickness.py` | `figures/FigS2_modelled_vs_observed_thickness.*` |
+| Fig. S3 — residual distribution at 38 sites | `steps/step9_carbonate_volume_analysis` | `figures/FigS3_thickness_residual_histogram.*` |
+| Fig. S4 — residuals by ocean basin | `steps/step9_carbonate_volume_analysis` | `figures/FigS4_thickness_residuals_by_basin.*` |
 | Fig. S5 — carbonate accumulation rate vs water depth at 80–0 Ma | `figure_scripts/make_figS5_accumulation_violins.py` | `figures/FigS5_accumulation_rate_vs_depth.*` |
 | Fig. S6 — net-outflux end-member scenarios | `steps/step10_carbon_cycle_degassing/standalone_plots` | `figures/FigS6_net_outflux_endmembers.*` |
 

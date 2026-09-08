@@ -75,16 +75,53 @@ _GRID_MAX = _GRID7 / "carbonate_sed_thickness_max_DM2026" / "compacted_sediment_
 _TABLE = HERE / "Table_carbonate_thickness.docx"
 
 
-def _save_mpl(fig, name, dpi=300):
-    FIGURES.mkdir(parents=True, exist_ok=True)
-    fig.savefig(FIGURES / f"{name}.png", dpi=dpi, bbox_inches="tight")
-    fig.savefig(FIGURES / f"{name}.pdf", dpi=dpi, bbox_inches="tight")
+def _paper_figures_dir():
+    """The paper's figure folder, so Figs S2-S4 land beside Figs 1-4 and S1.
+
+    This script is run standalone by the carbon runner, from its own directory, so
+    the workflow package may not be importable; fall back to locating a sibling
+    Paper/Figures by walking up from here.
+    """
+    try:
+        from ccdworkflow import config           # noqa: PLC0415
+        if config.PAPER_FIGURES is not None:
+            return config.PAPER_FIGURES
+    except Exception:
+        pass
+    for base in (HERE, *HERE.parents):
+        cand = base.parent / "Paper" / "Figures"
+        if cand.is_dir():
+            return cand
+    return None
 
 
-def _save_pygmt(fig, name, dpi=300):
+PAPER_FIGURES = _paper_figures_dir()
+
+
+def _targets(name, paper_name):
+    """Where a figure is written: this step's output folder, plus the paper's figure
+    folder under its supplement number when the figure is one of the supplement's."""
     FIGURES.mkdir(parents=True, exist_ok=True)
-    fig.savefig(str(FIGURES / f"{name}.pdf"))
-    fig.savefig(str(FIGURES / f"{name}.png"), dpi=dpi)
+    out = [(FIGURES, name)]
+    if paper_name:
+        if PAPER_FIGURES is None:
+            print(f"  [figures] paper figure folder not found; {paper_name} not propagated")
+        else:
+            PAPER_FIGURES.mkdir(parents=True, exist_ok=True)
+            out.append((PAPER_FIGURES, paper_name))
+    return out
+
+
+def _save_mpl(fig, name, dpi=300, paper_name=None):
+    for folder, stem in _targets(name, paper_name):
+        fig.savefig(folder / f"{stem}.png", dpi=dpi, bbox_inches="tight")
+        fig.savefig(folder / f"{stem}.pdf", dpi=dpi, bbox_inches="tight")
+
+
+def _save_pygmt(fig, name, dpi=300, paper_name=None):
+    for folder, stem in _targets(name, paper_name):
+        fig.savefig(str(folder / f"{stem}.pdf"))
+        fig.savefig(str(folder / f"{stem}.png"), dpi=dpi)
 
 
 # --------------------------------------------------------------------------
@@ -140,7 +177,7 @@ def sample_grid(da: xr.DataArray, lons, lats, search_deg: float = 1.5) -> np.nda
 # --------------------------------------------------------------------------
 # Figures
 # --------------------------------------------------------------------------
-def make_map(da_mean, df, vmax, name):
+def make_map(da_mean, df, vmax, name, paper_name=None):
     import pygmt
     tmp = Path("/tmp/_gt_grid.nc")
     da_mean.to_netcdf(tmp)
@@ -159,11 +196,11 @@ def make_map(da_mean, df, vmax, name):
     ann = max(round((vmax / 4) / 10) * 10, 10)
     fig.colorbar(frame=f"xa{ann}f{ann/2:g}+lCompacted carbonate thickness (m)",
                  position="JBC+w10c/0.4c+o0/1c")
-    _save_pygmt(fig, name, dpi=300)
+    _save_pygmt(fig, name, dpi=300, paper_name=paper_name)
     tmp.unlink(missing_ok=True)
 
 
-def make_histogram(df, name):
+def make_histogram(df, name, paper_name=None):
     """Histogram of central (mean) differences with min/max grid uncertainty.
 
     Bars = site counts per bin using the MEAN grid. Error bars span the count
@@ -194,15 +231,14 @@ def make_histogram(df, name):
     ax.axvline(d.median(), color="darkgreen", lw=1.6, ls=":", label=f"median = {d.median():+.1f} m")
     ax.set_xlabel("Observed − modelled compacted carbonate thickness (m)")
     ax.set_ylabel("Number of sites")
-    ax.set_title(f"Difference histogram with min/max uncertainty "
-                 f"(n={len(d)}, RMS={np.sqrt((d**2).mean()):.1f} m)")
+    # No title: this is Fig. S3 of the supplement, and n and RMS are given in its caption.
     ax.legend(frameon=False, fontsize=9)
     fig.tight_layout()
-    _save_mpl(fig, name, dpi=300)
+    _save_mpl(fig, name, dpi=300, paper_name=paper_name)
     plt.close(fig)
 
 
-def make_boxplot(df, name):
+def make_boxplot(df, name, paper_name=None):
     order = ["Global", "Pacific", "Atlantic", "Indian"]
     colors = {"Global": "#7F7F7F", "Pacific": "#D55E00", "Atlantic": "#0072B2", "Indian": "#009E73"}
     data = [df["diff_vs_mean"].dropna().values if b == "Global"
@@ -220,9 +256,9 @@ def make_boxplot(df, name):
                    s=18, color="black", alpha=0.5, zorder=3)
     ax.axhline(0, color="black", lw=1)
     ax.set_ylabel("Observed − modelled thickness (m)")
-    ax.set_title("Difference by ocean basin (central / mean grid)")
+    # No title: this is Fig. S4 of the supplement; the caption describes it.
     fig.tight_layout()
-    _save_mpl(fig, name, dpi=300)
+    _save_mpl(fig, name, dpi=300, paper_name=paper_name)
     plt.close(fig)
 
 
@@ -253,9 +289,14 @@ def main():
     csv = outdir / "carbonate_thickness_observed_vs_modelled.csv"
     df.to_csv(csv, index=False, float_format="%.2f")
 
-    make_map(grids["mean"], df, args.vmax, "map_obs_vs_modelled_carbonate_thickness")
-    make_histogram(df, "difference_histogram")
-    make_boxplot(df, "difference_boxplot_by_ocean")
+    # The paper_name arguments send Figs S2-S4 straight into the paper's figure
+    # folder alongside Figs 1-4 and S1, so the supplement can be assembled from one place.
+    make_map(grids["mean"], df, args.vmax, "map_obs_vs_modelled_carbonate_thickness",
+             paper_name="FigS2_modelled_vs_observed_thickness")
+    make_histogram(df, "difference_histogram",
+                   paper_name="FigS3_thickness_residual_histogram")
+    make_boxplot(df, "difference_boxplot_by_ocean",
+                 paper_name="FigS4_thickness_residuals_by_basin")
 
     print(f"n sites: {len(df)}")
     for col, lbl in [("diff_vs_mean", "mean grid"), ("diff_vs_min", "min grid"), ("diff_vs_max", "max grid")]:
