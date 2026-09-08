@@ -52,6 +52,30 @@ FMT = "compacted_sediment_thickness_0.25_{t}.nc"
 R = 6_371_000.0   # m
 
 
+def check_scenarios():
+    """Fail before writing anything if a whole scenario directory is absent.
+
+    Individual missing ages are legitimate — the three scenarios do not all span
+    the same range — and become NaN rows. A missing or empty *directory* is not:
+    it means the thickness grids were never made, or this copy of the workflow
+    does not hold them, and carrying on would overwrite the results file with a
+    column of blanks that looks like a finished run.
+    """
+    bad = []
+    for name, d in SCENARIOS.items():
+        if not d.is_dir():
+            bad.append(f"  {name}: no such directory   {d}")
+        elif not any(d.glob(FMT.format(t="*"))):
+            bad.append(f"  {name}: directory holds no thickness grids   {d}")
+    if bad:
+        raise SystemExit(
+            "carbonate thickness grids not found:\n" + "\n".join(bad) +
+            "\n\nRun the carbonate-thickness step first, or set STEPS_ROOT to a copy of\n"
+            "the workflow that holds the grids. The curated public copy under CCD/ carries\n"
+            "the code but not the grids, which are archived separately."
+        )
+
+
 def cell_area_m2(lat, lon):
     lat = np.asarray(lat, float); lon = np.asarray(lon, float)
     dlon = np.deg2rad(np.abs(np.median(np.diff(lon))))
@@ -81,6 +105,7 @@ def main():
     ap.add_argument("--tmax", type=int, default=170)
     ap.add_argument("--outdir", default=str(OUT_DIR))
     args = ap.parse_args()
+    check_scenarios()
     outdir = Path(args.outdir); outdir.mkdir(parents=True, exist_ok=True)
 
     rows = []
@@ -118,7 +143,7 @@ def main():
         for ext in ("png", "pdf"):
             fig.savefig(outdir / f"carbonate_volume_through_time.{ext}", dpi=200)
         plt.close(fig)
-        print(f"[stats] wrote carbonate_volume_through_time.png/pdf")
+        print("[stats] wrote carbonate_volume_through_time.png/pdf")
 
 
 if __name__ == "__main__":
