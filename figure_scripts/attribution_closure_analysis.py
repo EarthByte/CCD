@@ -106,40 +106,40 @@ def ar1_corr(x,y):
     t=r*np.sqrt((neff-2)/max(1e-12,1-r*r)); p=2*stats.t.sf(abs(t),df=neff-2)
     return float(r),neff,float(p)
 
-def lagscan(forcing_full, resp_full, wmask, amax=15):
-    # positive lag = forcing leads response by 'lag' Myr; correlate within wmask
-    best=None
-    for lag in range(-amax,amax+1):
-        f=np.interp(grid, grid+lag, forcing_full, left=np.nan, right=np.nan)
-        r,neff,p=ar1_corr(f[wmask],resp_full[wmask])
-        if r==r and (best is None or abs(r)>abs(best[1])):
-            best=(lag,r,neff,p)
-    return best if best else (0,np.nan,0,np.nan)
+# No lag scan. Carbonate compensation restores the ocean's saturation state in roughly
+# 5,000-10,000 years, whether the perturbation is a sea-level-driven shift in carbonate
+# burial or an added solid-Earth CO2 input. That is 100 to 200 times shorter than the
+# 1 Myr sampling interval, so on this grid the CCD responds within a single step and a
+# lead or lag of several Myr is not a physical quantity these series can resolve. Only
+# the zero-lag correlation is reported.
 
 for label, mask in [("OBSERVED 0-52 Ma", (D["age"]<=52).to_numpy()),
                     ("FULL 0-170 Ma (context; >52 model)", (D["age"]<=170).to_numpy())]:
     depthF=D["depth"].to_numpy(); ddepthF=np.gradient(depthF)
     depth=depthF[mask]; ddepth=ddepthF[mask]
     print(f"\n================ {label}  (n={int(mask.sum())}) ================")
-    print(f"{'series':16s} {'r(CCD)':>11s} {'lag*':>5s} {'r@lag':>7s} {'pAR1':>7s} | {'r(dCCD)':>8s}")
+    print(f"{'series':16s} {'r(CCD)':>11s} {'pAR1':>7s} | {'r(dCCD)':>8s}")
     for k in ["sl","MOR_ridge","arc_subduction","rift","carb_platform","intraplate",
               "gross_outflux","net_influx","net_out_excl_sed","net_out_incl_sed","sink_plate_sed"]:
         sF=D[k].to_numpy()
         r0,_,p0=ar1_corr(sF[mask],depth)
-        lag,rl,_,pl=lagscan(sF,depthF,mask)
         rd,_,_=ar1_corr(np.gradient(sF)[mask],ddepth)
-        print(f"{k:16s} {r0:11.2f} {lag:5d} {rl:7.2f} {p0:7.3f} | {rd:8.2f}")
+        print(f"{k:16s} {r0:11.2f} {p0:7.3f} | {rd:8.2f}")
 
 # ---------- multiple regression attribution (0-52, standardized) ----------
 sub=D[D["age"]<=52].copy()
 def z(a): a=np.asarray(a,float); return (a-a.mean())/a.std()
 Y=z(sub["depth"])
-preds={"sea_level":z(sub["sl"]), "total_degassing":z(sub["gross_outflux"]), "biological_sink":z(sub["sink_plate_sed"])}
+# Two predictors only. The pelagic-carbonate sink is not a third independent factor:
+# sea level is itself largely a proxy for the shift of carbonate burial between shelf
+# and deep sea, so entering the sink alongside it splits one mechanism in two. It is
+# still reported as a correlation above.
+preds={"sea_level":z(sub["sl"]), "total_degassing":z(sub["gross_outflux"])}
 X=np.column_stack([preds[k] for k in preds]); X=np.column_stack([np.ones(len(Y)),X])
 beta,_,_,_=np.linalg.lstsq(X,Y,rcond=None)
 yhat=X@beta; R2=1-np.sum((Y-yhat)**2)/np.sum((Y-Y.mean())**2)
 print(f"\n================ MULTIPLE REGRESSION (0-52 Ma, standardized) ================")
-print(f"CCD ~ sea_level + total_degassing + biological_sink   R2_full={R2:.2f}")
+print(f"CCD ~ sea_level + total_degassing   R2_full={R2:.2f}")
 for name,b in zip(["intercept"]+list(preds),beta):
     print(f"  {name:16s} std beta = {b:+.2f}")
 # incremental R2 (drop-one)

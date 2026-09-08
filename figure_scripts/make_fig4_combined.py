@@ -25,12 +25,17 @@ FIGDIR.mkdir(parents=True, exist_ok=True)
 FIG = str(FIGDIR)
 D = pd.read_csv(_HERE/"attribution_matched_series.csv")
 age=D["age"].to_numpy(); ccd=-D["depth"].to_numpy()
-events={"OAE1a\n~120":120,"Weissert\n~133":133,"OAE2\n~93.9":93.9,"K–Pg\n66":66,
-        "PETM\n56":56,"EOT\n~34":34,"MMCO\n~15":15}
+events={"OAE1a ~120":120,"Weissert ~133":133,"OAE2 ~93.9":93.9,"K\u2013Pg 66":66,
+        "PETM 56":56,"EOT ~34":34,"MMCO ~15":15}
 
-fig=plt.figure(figsize=(9,10.3))
-gs=fig.add_gridspec(2,2,height_ratios=[1.34,1.0],hspace=0.26,wspace=0.26)
-axa=fig.add_subplot(gs[0,:]); axb1=fig.add_subplot(gs[1,0]); axb2=fig.add_subplot(gs[1,1])
+# Two panels. The lag panel is gone: carbonate compensation restores ocean saturation
+# in about 5,000-10,000 years, whether the perturbation is a sea-level-driven shift in
+# carbonate burial or an added solid-Earth CO2 input, which is 100 to 200 times shorter
+# than the 1 Myr sampling. A lead or lag of several Myr is not resolvable here, so only
+# the zero-lag relationship is shown.
+fig=plt.figure(figsize=(7.48,8.6))
+gs=fig.add_gridspec(2,1,height_ratios=[1.34,0.95],hspace=0.30,top=0.885)
+axa=fig.add_subplot(gs[0,0]); axb1=fig.add_subplot(gs[1,0])
 
 # (a) CCD vs degassing
 axa.plot(age,ccd,color="black",lw=2.4,label="Global CCD (this study)")
@@ -41,8 +46,13 @@ ax2.plot(age,D["MOR_ridge"],color="#0072b2",lw=1.6,label="Mid-ocean ridge outgas
 ax2.plot(age,D["rift"],color="#9467bd",lw=1.2,label="Rift outgassing")
 ax2.plot(age,D["carb_platform"],color="#8c564b",lw=1.2,label="Arc outgassing (carbonate platforms)")
 ax2.set_ylabel("CO$_2$ outflux (Mt C yr$^{-1}$)")
+# Event labels sit vertically above the frame. Horizontal ones collided in pairs
+# (Weissert/OAE1a and K-Pg/PETM) once the figure was narrowed to the journal column
+# width, and at 45 degrees they still did; vertical text cannot crowd horizontally.
 for lbl,a in events.items():
-    axa.axvline(a,color="0.7",lw=0.8,ls=":"); axa.text(a,-2620,lbl,ha="center",va="top",fontsize=9.5,color="0.35")
+    axa.axvline(a,color="0.7",lw=0.8,ls=":")
+    axa.text(a,1.015,lbl,transform=axa.get_xaxis_transform(),rotation=90,
+             ha="center",va="bottom",fontsize=8.5,color="0.35")
 l1,la1=axa.get_legend_handles_labels(); l2,la2=ax2.get_legend_handles_labels()
 # Legend on the LEFT, with the top of the box at -3450 m on the CCD axis. Set by
 # depth rather than by axes fraction so it stays put if the y-limits change.
@@ -56,35 +66,52 @@ axa.legend(l1+l2,la1+la2,fontsize=10,loc="upper left",
 # (b) attribution
 def z(a): a=np.asarray(a,float); return (a-a.mean())/a.std()
 sub=D[D["age"]<=52]; Y=z(sub["depth"])
-preds={"Sea level":z(sub["sl"]),"Total degassing":z(sub["gross_outflux"]),"Biological sink":z(sub["sink_plate_sed"])}
+# Sea level and CO2 outgassing only. The pelagic-carbonate sink is not a third
+# independent factor: sea level is itself largely a proxy for the shift of carbonate
+# burial between shelf and deep sea, so entering the sink beside it splits one
+# mechanism across two predictors.
+preds={"Sea level":z(sub["sl"]),"Total degassing":z(sub["gross_outflux"])}
 X=np.column_stack([np.ones(len(Y))]+[preds[k] for k in preds]); b,_,_,_=np.linalg.lstsq(X,Y,rcond=None)
 R2=1-np.sum((Y-X@b)**2)/np.sum((Y-Y.mean())**2)
 inc={}
 for drop in preds:
     keep=[k for k in preds if k!=drop]; Xk=np.column_stack([np.ones(len(Y))]+[preds[k] for k in keep])
     bk,_,_,_=np.linalg.lstsq(Xk,Y,rcond=None); inc[drop]=R2-(1-np.sum((Y-Xk@bk)**2)/np.sum((Y-Y.mean())**2))
-axb1.bar(list(inc.keys()),list(inc.values()),color=["#009e73","#e69f00","#0072b2"],edgecolor="black")
-axb1.set_ylabel("Incremental R² (unique variance)"); axb1.set_ylim(0,0.3)
-axb1.tick_params(axis="x",labelrotation=15)
-
-lags=range(-15,16); grid=age
-def onlag(f,resp,mask):
-    out=[]
-    for L in lags:
-        fs=np.interp(grid,grid+L,f,left=np.nan,right=np.nan); m=mask&np.isfinite(fs)
-        out.append(np.corrcoef(fs[m],resp[m])[0,1])
-    return np.array(out)
-mask=(age<=52); depth=D["depth"].to_numpy()
-for k,c in [("arc_subduction","#d1495b"),("sl","#009e73"),("MOR_ridge","#0072b2"),("rift","#9467bd"),("carb_platform","#8c564b")]:
-    axb2.plot(list(lags),onlag(D[k].to_numpy(),depth,mask),color=c,lw=1.6,
-              label={"arc_subduction":"Arc","sl":"Sea level","MOR_ridge":"MOR","gross_outflux":"Gross","rift":"Rift","carb_platform":"Carb. platform"}[k])
-axb2.axvline(0,color="0.6",lw=0.8); axb2.axhline(0,color="0.6",lw=0.8)
-axb2.set_xlabel("Lag (Myr; + = forcing leads CCD)"); axb2.set_ylabel("Correlation with CCD")
-axb2.legend(fontsize=11,frameon=False,ncol=1,loc="center left",bbox_to_anchor=(0.0,0.52))
+axb1.bar(list(inc.keys()),list(inc.values()),width=0.55,
+         color=["#009e73","#e69f00"],edgecolor="black")
+axb1.set_ylabel("Incremental R² (unique variance)")
+axb1.set_ylim(0,0.3); axb1.set_xlim(-0.55,1.55)
+for i,(k,v) in enumerate(inc.items()):
+    axb1.text(i,v+0.008,f"{v:.2f}",ha="center",va="bottom",fontsize=10)
+axb1.text(0.98,0.94,f"Two-predictor model R² = {R2:.2f}",transform=axb1.transAxes,
+          ha="right",va="top",fontsize=10)
+axb1.spines["top"].set_visible(False); axb1.spines["right"].set_visible(False)
 
 def plabel(ax,t):
     ax.text(-0.06,1.05,t,transform=ax.transAxes,fontsize=14,fontweight="bold",va="bottom",ha="right")
-plabel(axa,"a"); plabel(axb1,"b"); plabel(axb2,"c")
+plabel(axa,"a"); plabel(axb1,"b")
+
+fig.canvas.draw(); _r=fig.canvas.get_renderer()
+def _live(axis,lim):
+    lo,hi=min(lim),max(lim)
+    return [l for loc,l in zip(axis.get_ticklocs(),axis.get_ticklabels())
+            if lo<=loc<=hi and l.get_text().strip() and l.get_visible()]
+_cand=list(axa.texts)+list(ax2.texts)+list(axb1.texts)
+_cand+=[axa.xaxis.label,axa.yaxis.label,ax2.yaxis.label,axb1.xaxis.label,axb1.yaxis.label]
+_cand+=_live(axa.xaxis,axa.get_xlim())+_live(axa.yaxis,axa.get_ylim())+_live(ax2.yaxis,ax2.get_ylim())
+_cand+=_live(axb1.xaxis,axb1.get_xlim())+_live(axb1.yaxis,axb1.get_ylim())
+_items=[]
+for _t in _cand:
+    if not (_t.get_text().strip() and _t.get_visible()): continue
+    _e=_t.get_window_extent(renderer=_r)
+    if _e.width>0 and _e.height>0: _items.append((_t,_e))
+_bad=[]
+for _i in range(len(_items)):
+    for _j in range(_i+1,len(_items)):
+        _a,_b=_items[_i][1],_items[_j][1]
+        if _a.overlaps(_b) and min(_a.x1,_b.x1)-max(_a.x0,_b.x0)>1.0 and min(_a.y1,_b.y1)-max(_a.y0,_b.y0)>1.0:
+            _bad.append(f"{_items[_i][0].get_text()!r} / {_items[_j][0].get_text()!r}")
+print("  text collisions: "+(", ".join(_bad) if _bad else "none"))
 
 for ext in ("png","pdf"): fig.savefig(f"{FIG}/Fig4_combined.{ext}",dpi=300,bbox_inches="tight")
 plt.close(fig); print("wrote Fig4_combined")
