@@ -34,7 +34,12 @@ import matplotlib.pyplot as plt
 
 import os
 HERE = Path(__file__).resolve().parent
-_STEPS_ROOT = Path(os.environ.get("STEPS_ROOT", HERE.parent.parent / "steps"))
+# steps/ sits beside pipeline_carbon/ inside the workflow, not one level further up.
+# The runner exports STEPS_ROOT so the old default never bit under run_all.sh, but a
+# standalone run silently wrote its outputs to a stray folder outside the workflow.
+_STEPS_ROOT = Path(os.environ.get("STEPS_ROOT", HERE.parent / "steps"))
+if not _STEPS_ROOT.is_dir():
+    raise SystemExit(f"steps root not found: {_STEPS_ROOT} (set STEPS_ROOT to override)")
 STEP7 = _STEPS_ROOT / "step8_carbonate_sediment_thickness"
 OUT_DIR = _STEPS_ROOT / "step9_carbonate_volume_analysis" / "output" / "dm2026_volume_stats"
 
@@ -85,8 +90,12 @@ def main():
             p = d / FMT.format(t=t)
             if p.exists():
                 vol, cov = stats_for_grid(p)
-                row[f"volume_1e6km3_{name}"] = vol / 1e18      # m^3 -> 1e6 km^3
-                row[f"area_1e6km2_{name}"] = cov / 1e18        # m^2 -> 1e6 km^2  (1e6 km^2 = 1e18 m^2)
+                # 1e6 km^3 = 1e15 m^3 (1 km^3 = 1e9 m^3); 1e6 km^2 = 1e12 m^2 (1 km^2 = 1e6 m^2).
+                # Both were previously divided by 1e18, understating volume 1000-fold and
+                # area a million-fold. The curve shapes were unaffected, the axis numbers
+                # were not.
+                row[f"volume_1e6km3_{name}"] = vol / 1e15      # m^3 -> 1e6 km^3
+                row[f"area_1e6km2_{name}"] = cov / 1e12        # m^2 -> 1e6 km^2
             else:
                 row[f"volume_1e6km3_{name}"] = np.nan
                 row[f"area_1e6km2_{name}"] = np.nan
