@@ -90,9 +90,10 @@ GRIDS_ARE_RECONSTRUCTED = True
 # sized to fit a page instead, 117 mm wide by about 225 mm tall.
 TIMES=[0,25,115]; LABELS=["a","b","c"]
 proj=ccrs.Mollweide(central_longitude=0)
-# The left and right margins have to hold the budget panel's two axis labels, and the
-# maps use the same box so every panel is the same width. Row 4 is an empty spacer that
-# the shared colour bar sits in, so it cannot land on top of the last map.
+# The maps get the full column. Panel (d) starts from the same cell and is then fitted
+# to them further down, so that its axis labels finish flush with the map edges rather
+# than overhanging. Row 4 is an empty spacer that the shared colour bar sits in, so it
+# cannot land on top of the last map.
 fig=plt.figure(figsize=(5.4,8.85))
 gs=fig.add_gridspec(5,1,height_ratios=[1.0,1.0,1.0,0.34,0.72],
                     left=0.165,right=0.855,top=0.995,bottom=0.070,hspace=0.05)
@@ -165,6 +166,33 @@ _cb=_ilu.module_from_spec(_spec); _spec.loader.exec_module(_cb)
 _series=_cb.budget_series()
 _bx=_cb.draw_budget(axd, _series, label_size=7.5, tick_size=6.5)
 _cb.write_csv(_series)
+
+# The maps are ellipses that reach the edge of their axes box; panel (d) is a
+# rectangle carrying a two-line y-label on each side. Given the same box, those
+# labels overhang the maps by about 13 mm a side and the panel reads as wider than
+# them. Shrink its box until its own outermost ink - tick labels and axis labels
+# included - lines up with the map edges. Font sizes are in points and are not
+# touched by this, so nothing gets smaller to read.
+def _fit_panel_to_maps(_x0, _x1, _axs, _iters=4):
+    for _ in range(_iters):
+        fig.canvas.draw()
+        _r = fig.canvas.get_renderer()
+        _bb = [a.get_tightbbox(_r) for a in _axs]
+        _u0 = min(b.x0 for b in _bb)/fig.bbox.width
+        _u1 = max(b.x1 for b in _bb)/fig.bbox.width
+        if abs(_u0-_x0) < 2e-4 and abs(_u1-_x1) < 2e-4:
+            return
+        _p = _axs[0].get_position()
+        _nx0 = _p.x0 + (_x0-_u0); _nx1 = _p.x1 - (_u1-_x1)
+        for a in _axs:
+            a.set_position([_nx0, _p.y0, _nx1-_nx0, _p.height])
+
+fig.canvas.draw()
+_mapbox = axes[0].get_position()
+_fit_panel_to_maps(_mapbox.x0, _mapbox.x1, [axd, _bx])
+_mm = fig.get_size_inches()[0]*25.4
+print(f"  panel (d) fitted to the maps: {axd.get_position().width*_mm:.0f} mm frame, "
+      f"ink flush with the {_mapbox.width*_mm:.0f} mm maps")
 # Panel letters in FIGURE coordinates at one x. Axes coordinates will not do it: the
 # Mollweide panels are aspect-constrained, so their drawn box is narrower than the
 # gridspec cell and the same transAxes offset lands in a different place on each.
