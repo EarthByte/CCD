@@ -5,7 +5,7 @@ above the CCD, at 1 Myr resolution from 170 Ma to the present.
 
 Left axis
     Net carbonate volume gain per Myr, V(t) - V(t+1), smoothed with a Gaussian of
-    5 Myr full width at half maximum, where V(t) is the global
+    3 Myr full width at half maximum, where V(t) is the global
     compacted carbonate volume on the reconstructed seafloor at time t. This is a
     global integral, so unlike a cell-by-cell difference it is unaffected by plate
     motion carrying crust between grid cells. It is a NET quantity, deposition during
@@ -72,7 +72,7 @@ VOLCSV = (CW / "steps/step9_carbonate_volume_analysis/output/dm2026_volume_stats
 HYBRID = FIGDIR / "CCD_hybrid_DM2026.txt"
 
 TMAX = 170
-SMOOTH_FWHM_MYR = 5.0     # Gaussian full width at half maximum, in Myr
+SMOOTH_FWHM_MYR = 3.0     # Gaussian full width at half maximum, in Myr
 R_EARTH_M = 6371000.0
 VOL_COLOUR, AREA_COLOUR = "#1f6f8b", "#b3202c"
 PT_TICK, PT_LABEL, PT_ANNOT = 7.5, 8.5, 7.5
@@ -100,8 +100,10 @@ def smooth_gaussian(y: np.ndarray, fwhm_myr: float) -> np.ndarray:
 
     The unsmoothed series carries single-Myr spikes that come from the reconstruction
     stepping crust in and out of the mask rather than from anything in the carbonate
-    budget. At 1 Myr sampling a 5 Myr FWHM cuts the scatter between neighbouring points
-    six-fold and the curvature twenty-six-fold while keeping three quarters of the range.
+    budget. At 1 Myr sampling a 3 Myr FWHM cuts the scatter between neighbouring points
+    four-fold and the curvature ten-fold while keeping four fifths of the range. A 5 Myr
+    width smooths harder but flattens real structure, notably the dip near 50 Ma and the
+    late Neogene bump.
     Weights are renormalised over the samples actually available, so the ends are not
     pulled toward zero.
     """
