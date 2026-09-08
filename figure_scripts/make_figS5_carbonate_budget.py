@@ -4,19 +4,20 @@ Figure S5 - carbonate added per million years, against the seafloor area availab
 above the CCD, at 1 Myr resolution from 170 Ma to the present.
 
 Left axis
-    Net carbonate volume added per Myr, V(t) - V(t+1), smoothed with a Gaussian of
+    Net carbonate volume gain per Myr, V(t) - V(t+1), smoothed with a Gaussian of
     5 Myr full width at half maximum, where V(t) is the global
     compacted carbonate volume on the reconstructed seafloor at time t. This is a
     global integral, so unlike a cell-by-cell difference it is unaffected by plate
-    motion carrying crust between grid cells. It is a NET quantity: deposition during
-    the interval minus the carbonate carried down with whatever subducted in it.
+    motion carrying crust between grid cells. It is a NET quantity, deposition during
+    the interval minus the carbonate carried down with whatever subducted in it, which
+    is why the axis reads gain rather than added.
 
 Right axis
     The area of seafloor lying above the CCD at each time, which is the area over
     which the model deposits carbonate at all.
 
-Together they show the budget: carbonate accumulates faster when more of the
-seafloor sits above the compensation depth.
+Together they show the budget: the reservoir grows faster when more of the seafloor
+sits above the compensation depth.
 
 Definition of the seafloor area
 -------------------------------
@@ -164,7 +165,7 @@ def main() -> None:
     ax.plot(added_age, added_smooth, color=VOL_COLOUR, lw=1.6)
     ax.set_xlim(TMAX, 0)
     ax.set_xlabel("Age (Ma)", fontsize=PT_LABEL)
-    ax.set_ylabel("Carbonate volume added (10$^6$ km$^3$ Myr$^{-1}$)", fontsize=PT_LABEL,
+    ax.set_ylabel("Net carbonate volume gain (10$^6$ km$^3$ Myr$^{-1}$)", fontsize=PT_LABEL,
                   color=VOL_COLOUR)
     ax.tick_params(axis="y", labelcolor=VOL_COLOUR)
     ax.axhline(0, color="0.75", lw=0.6, zorder=0)
@@ -185,14 +186,14 @@ def main() -> None:
 
     ok = np.isfinite(area[:-1]) & np.isfinite(added_smooth)
     r = float(np.corrcoef(area[:-1][ok], added_smooth[ok])[0, 1])
-    print(f"  correlation of carbonate added with area above the CCD: r = {r:.2f}")
+    print(f"  correlation of net carbonate gain with area above the CCD: r = {r:.2f}")
 
     out_csv = FIGDIR / "FigS5_carbonate_budget.csv"
     smooth_col = np.concatenate([[np.nan], added_smooth])       # aligned to Age_Ma
     raw_col = np.concatenate([[np.nan], added])
     pd.DataFrame({"Age_Ma": age, "volume_1e6km3": V,
-                  "added_1e6km3_per_myr_raw": raw_col,
-                  "added_1e6km3_per_myr_smoothed": smooth_col,
+                  "net_gain_1e6km3_per_myr_raw": raw_col,
+                  "net_gain_1e6km3_per_myr_smoothed": smooth_col,
                   "area_above_CCD_1e6km2": area}).to_csv(out_csv, index=False,
                                                          float_format="%.4f")
     print(f"wrote {out_csv}")

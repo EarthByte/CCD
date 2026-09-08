@@ -1,4 +1,4 @@
-Age_Ma,volume_1e6km3,added_1e6km3_per_myr_raw,added_1e6km3_per_myr_smoothed,area_above_CCD_1e6km2
+Age_Ma,volume_1e6km3,net_gain_1e6km3_per_myr_raw,net_gain_1e6km3_per_myr_smoothed,area_above_CCD_1e6km2
 0.0000,39.1473,,,188.8600
 1.0000,38.6219,0.5254,0.5032,181.1481
 2.0000,38.1506,0.4713,0.5032,162.9567
