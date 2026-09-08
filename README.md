@@ -103,7 +103,8 @@ supplementary animations; `figures/` holds the rendered output (PNG + PDF).
 | Fig. S2 — modelled vs observed present-day thickness | `steps/step9_carbonate_volume_analysis/ground_truth_carbonate_thickness.py` | `figures/map_obs_vs_modelled_carbonate_thickness.*` |
 | Fig. S3 — residual distribution at 38 sites | `steps/step9_carbonate_volume_analysis` | `figures/ground_truth_difference_histogram.*` |
 | Fig. S4 — residuals by ocean basin | `steps/step9_carbonate_volume_analysis` | `figures/ground_truth_difference_boxplot_by_ocean.*` |
-| Fig. S5 — net-outflux end-member scenarios | `steps/step10_carbon_cycle_degassing/standalone_plots` | `figures/FigS8_net_outflux_endmembers.*` |
+| Fig. S5 — carbonate accumulation rate vs water depth at 80–0 Ma | `figure_scripts/make_figS5_accumulation_violins.py` | `figures/FigS5_accumulation_rate_vs_depth.*` |
+| Fig. S6 — net-outflux end-member scenarios | `steps/step10_carbon_cycle_degassing/standalone_plots` | `figures/FigS6_net_outflux_endmembers.*` |
 
 `figure_scripts/attribution_closure_analysis.py` performs the attribution
 (correlations, AR1-adjusted significance, incremental R², first differences) and
