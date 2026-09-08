@@ -170,29 +170,39 @@ _cb.write_csv(_series)
 # The maps are ellipses that reach the edge of their axes box; panel (d) is a
 # rectangle carrying a two-line y-label on each side. Given the same box, those
 # labels overhang the maps by about 13 mm a side and the panel reads as wider than
-# them. Shrink its box until its own outermost ink - tick labels and axis labels
-# included - lines up with the map edges. Font sizes are in points and are not
+# them. Shrink its box until its own drawn ink - tick labels and axis labels
+# included - spans exactly what the maps span. Font sizes are in points and are not
 # touched by this, so nothing gets smaller to read.
-def _fit_panel_to_maps(_x0, _x1, _axs, _iters=4):
-    for _ in range(_iters):
-        fig.canvas.draw()
-        _r = fig.canvas.get_renderer()
-        _bb = [a.get_tightbbox(_r) for a in _axs]
-        _u0 = min(b.x0 for b in _bb)/fig.bbox.width
-        _u1 = max(b.x1 for b in _bb)/fig.bbox.width
-        if abs(_u0-_x0) < 2e-4 and abs(_u1-_x1) < 2e-4:
-            return
-        _p = _axs[0].get_position()
-        _nx0 = _p.x0 + (_x0-_u0); _nx1 = _p.x1 - (_u1-_x1)
-        for a in _axs:
-            a.set_position([_nx0, _p.y0, _nx1-_nx0, _p.height])
+def _ink_span(_axs, _pad=2):
+    """Left and right edge of these axes' drawn ink, as fractions of figure width.
 
-fig.canvas.draw()
-_mapbox = axes[0].get_position()
-_fit_panel_to_maps(_mapbox.x0, _mapbox.x1, [axd, _bx])
+    Measured off the rendered canvas, not from get_tightbbox: that pads around glyph
+    boxes, which left the panel a few per cent wider than the maps.
+    """
+    fig.canvas.draw()
+    _buf = np.asarray(fig.canvas.buffer_rgba())[..., :3].mean(axis=2)
+    _H, _W = _buf.shape
+    _r = fig.canvas.get_renderer()
+    _bb = [a.get_tightbbox(_r) for a in _axs]
+    _y0 = max(0, int(_H - max(b.y1 for b in _bb)) - _pad)
+    _y1 = min(_H, int(_H - min(b.y0 for b in _bb)) + _pad)
+    _cols = np.where((_buf[_y0:_y1, :] < 245).any(axis=0))[0]
+    return _cols.min()/_W, (_cols.max()+1)/_W
+
+_t0, _t1 = _ink_span(axes[:1])
+for _ in range(5):
+    _d0, _d1 = _ink_span([axd, _bx])
+    if abs(_d0-_t0) < 3e-4 and abs(_d1-_t1) < 3e-4:
+        break
+    _p = axd.get_position()
+    _nx0 = _p.x0 + (_t0-_d0); _nx1 = _p.x1 - (_d1-_t1)
+    for _a in (axd, _bx):
+        _a.set_position([_nx0, _p.y0, _nx1-_nx0, _p.height])
 _mm = fig.get_size_inches()[0]*25.4
+_d0, _d1 = _ink_span([axd, _bx])
 print(f"  panel (d) fitted to the maps: {axd.get_position().width*_mm:.0f} mm frame, "
-      f"ink flush with the {_mapbox.width*_mm:.0f} mm maps")
+      f"ink {(_d1-_d0)*_mm:.1f} mm against the maps' {(_t1-_t0)*_mm:.1f} mm")
+
 # Panel letters in FIGURE coordinates at one x. Axes coordinates will not do it: the
 # Mollweide panels are aspect-constrained, so their drawn box is narrower than the
 # gridspec cell and the same transAxes offset lands in a different place on each.
