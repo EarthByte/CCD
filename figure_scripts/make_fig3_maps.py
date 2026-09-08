@@ -95,7 +95,7 @@ proj=ccrs.Mollweide(central_longitude=0)
 # the shared colour bar sits in, so it cannot land on top of the last map.
 fig=plt.figure(figsize=(5.4,8.85))
 gs=fig.add_gridspec(5,1,height_ratios=[1.0,1.0,1.0,0.34,0.72],
-                    left=0.130,right=0.855,top=0.995,bottom=0.070,hspace=0.05)
+                    left=0.165,right=0.855,top=0.995,bottom=0.070,hspace=0.05)
 axes=[fig.add_subplot(gs[i,0],projection=proj) for i in range(3)]
 axd=fig.add_subplot(gs[4,0])
 _spacer=fig.add_subplot(gs[3,0]); _spacer.axis("off")
@@ -139,8 +139,7 @@ for ax,T,lab in zip(axes,TIMES,LABELS):
         ax.text(-171, _lat, _t, transform=ccrs.PlateCarree(), fontsize=6.0,
                 va="center", ha="left", zorder=10,
                 path_effects=[_pe.withStroke(linewidth=1.8, foreground="white")])
-    ax.text(0.015,0.985, f"{lab}", transform=ax.transAxes, fontsize=13, fontweight="bold",
-            va="top", ha="left", zorder=10)
+    # Panel letters are placed later, in figure coordinates, so that all four line up.
     # age label shifted ~4 mm left of its former position so it clears the Mollweide outline
     _panel_mm = ax.get_position().width*fig.get_size_inches()[0]*25.4
     ax.text(0.145-4.0/_panel_mm, 0.972, f"{T} Ma", transform=ax.transAxes, fontsize=10,
@@ -166,8 +165,15 @@ _cb=_ilu.module_from_spec(_spec); _spec.loader.exec_module(_cb)
 _series=_cb.budget_series()
 _bx=_cb.draw_budget(axd, _series, label_size=7.5, tick_size=6.5)
 _cb.write_csv(_series)
-axd.text(-0.135,1.02,"d",transform=axd.transAxes,fontsize=13,fontweight="bold",
-         va="bottom",ha="left")
+# Panel letters in FIGURE coordinates at one x. Axes coordinates will not do it: the
+# Mollweide panels are aspect-constrained, so their drawn box is narrower than the
+# gridspec cell and the same transAxes offset lands in a different place on each.
+# Left of panel (d) two-line y-label, which starts at x = 0.058 of the figure width;
+# the gridspec left margin was widened to 0.165 to make that room.
+_LETTER_X = 0.018
+for _a, _lab in zip(axes + [axd], "abcd"):
+    fig.text(_LETTER_X, _a.get_position().y1, _lab, fontsize=13, fontweight="bold",
+             va="top", ha="left", zorder=10)
 print(f"  budget panel: r = {_series['r']:.2f} between net gain and area above the CCD")
 _bad=_cb.text_collisions(fig,[(axd,True),(_bx,False),(cax,False)])
 print("  text collisions (panel d): "+(", ".join(_bad) if _bad else "none"))
