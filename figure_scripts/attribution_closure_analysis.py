@@ -95,6 +95,20 @@ _pli = _pli[np.isfinite(_pli.index)]
 _bio = _pli[("sediments", "mean")].to_numpy() + _pli[("crust", "mean")].to_numpy()
 D["sink_plate_sed"] = onto(_pli.index.to_numpy(float), _bio)
 
+# ---------- sign convention for everything reported below ----------
+# Correlations and regression coefficients are reported against the CCD AS THE FIGURES
+# PLOT IT: metres relative to sea level, so a larger value is a SHALLOWER CCD. Figures 1,
+# 2b and 4a all draw it that way, and in Fig. 2b it puts high sea level and a shallow CCD
+# on the same side, which is the point of the panel. Reporting the correlations against
+# depth positive down instead would have made a curve that visibly rises with the CCD
+# come out negative, and vice versa. So: sea level correlates POSITIVELY with the CCD
+# (high sea level, shallow CCD), and an outflux that grows while the CCD deepens
+# correlates NEGATIVELY. Acidification by added CO2 predicts shoaling, hence a POSITIVE
+# correlation; that is the prediction the degassing components are tested against.
+# The internal series D["depth"] stays positive down, and so does the sea-level
+# calibration, which is a slope in metres of deepening per metre of sea-level fall.
+CCD_REPORTED = lambda _d: -np.asarray(_d, float)
+
 # ---------- AR1-adjusted correlation ----------
 def ar1_corr(x,y):
     m=np.isfinite(x)&np.isfinite(y); x,y=x[m],y[m]; n=len(x)
@@ -114,7 +128,7 @@ def ar1_corr(x,y):
 
 for label, mask in [("OBSERVED 0-52 Ma", (D["age"]<=52).to_numpy()),
                     ("FULL 0-170 Ma (context; >52 model)", (D["age"]<=170).to_numpy())]:
-    depthF=D["depth"].to_numpy(); ddepthF=np.gradient(depthF)
+    depthF=CCD_REPORTED(D["depth"].to_numpy()); ddepthF=np.gradient(depthF)
     depth=depthF[mask]; ddepth=ddepthF[mask]
     print(f"\n================ {label}  (n={int(mask.sum())}) ================")
     print(f"{'series':16s} {'r(CCD)':>11s} {'pAR1':>7s} | {'r(dCCD)':>8s}")
@@ -128,7 +142,7 @@ for label, mask in [("OBSERVED 0-52 Ma", (D["age"]<=52).to_numpy()),
 # ---------- multiple regression attribution (0-52, standardized) ----------
 sub=D[D["age"]<=52].copy()
 def z(a): a=np.asarray(a,float); return (a-a.mean())/a.std()
-Y=z(sub["depth"])
+Y=z(CCD_REPORTED(sub["depth"]))
 # Two predictors only. The pelagic-carbonate sink is not a third independent factor:
 # sea level is itself largely a proxy for the shift of carbonate burial between shelf
 # and deep sea, so entering the sink alongside it splits one mechanism in two. It is
@@ -166,7 +180,7 @@ _COMPONENTS = [
 ]
 _rows = []
 _m52 = (D["age"] <= 52).to_numpy()
-_depth52 = D["depth"].to_numpy()[_m52]
+_depth52 = CCD_REPORTED(D["depth"].to_numpy())[_m52]
 for _label, _base, _indep in _COMPONENTS:
     _r = {}
     for _sc in ("mean", "min", "max"):

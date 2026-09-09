@@ -36,7 +36,7 @@ rma=rr[rr["method"]=="RMA"].iloc[0]
 hyb=rd(FIGDIR/"CCD_hybrid_DM2026.txt",["age","ccd","lo","hi"]).dropna()
 pred=rd(CW/"steps/step6_sealevel_ccd_regression/outputs/predicted_ccd_sl_0-205Ma.txt",["age","ccd","lo","hi"]).dropna()
 bw =rd(CW/"data/reference_ccd/Boss_Wilkinson_1991_global_CCD_mean.txt",["age","ccd","mn","mx","a2","mx2","a3","mn3"]).dropna(subset=["age","ccd"])
-db =rd(CW/"data/reference_ccd/Global_CCD_Delaney_Boyle.txt",["age","ccd"]).dropna(); db["ccd"]=-db["ccd"]
+db =rd(CW/"data/reference_ccd/Global_CCD_Delaney_Boyle.txt",["age","ccd"]).dropna(); db["ccd"]=db["ccd"]
 
 fig=plt.figure(figsize=(7.4,8.1))
 gs=fig.add_gridspec(2,1,height_ratios=[1.0,0.98],hspace=0.20,left=0.11,right=0.865,top=0.985,bottom=0.06)
