@@ -205,12 +205,24 @@ def draw_budget(ax, s: dict, label_size: float = PT_LABEL, tick_size: float = PT
 
 
 def write_csv(s: dict) -> Path:
+    """Write the panel's data beside the figure, and again as Supplementary Dataset S3.
+
+    The same table serves two purposes and used to exist under one name in one place,
+    so the supplement cited a file called Fig3_carbonate_budget.csv. It is now written
+    twice, from here, so the dataset the supplement names can never drift from the panel:
+    once next to the figures and once beside the manuscript under its dataset name.
+    """
+    df = pd.DataFrame({"Age_Ma": s["age"], "volume_1e6km3": s["V"],
+                       "net_gain_1e6km3_per_myr_raw": np.concatenate([[np.nan], s["raw"]]),
+                       "net_gain_1e6km3_per_myr_smoothed": np.concatenate([[np.nan], s["gain"]]),
+                       "area_above_CCD_1e6km2": s["area"]})
     out_csv = FIGDIR / "Fig3_carbonate_budget.csv"
-    pd.DataFrame({"Age_Ma": s["age"], "volume_1e6km3": s["V"],
-                  "net_gain_1e6km3_per_myr_raw": np.concatenate([[np.nan], s["raw"]]),
-                  "net_gain_1e6km3_per_myr_smoothed": np.concatenate([[np.nan], s["gain"]]),
-                  "area_above_CCD_1e6km2": s["area"]}).to_csv(
-        out_csv, index=False, float_format="%.4f")
+    df.to_csv(out_csv, index=False, float_format="%.4f")
+    # Paper/ in the working tree, the workflow root in the public repo - the same rule
+    # make_supplementary_datasets.py uses for Datasets S1 and S2.
+    _paper = _HERE if (_HERE / "Figures").is_dir() else FIGDIR.parent
+    df.to_csv(_paper / "Supplementary_Dataset_S3_carbonate_budget.csv",
+              index=False, float_format="%.4f")
     return out_csv
 
 
