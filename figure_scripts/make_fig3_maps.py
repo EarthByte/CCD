@@ -89,7 +89,7 @@ GRIDS_ARE_RECONSTRUCTED = True
 # 190 mm column three of them plus the budget would run past the page; the figure is
 # sized to fit a page instead, 117 mm wide by about 225 mm tall.
 OUT_DPI = 300      # the fit measures at this dpi too, so the two cannot drift
-TIMES=[0,25,115]; LABELS=["a","b","c"]
+TIMES=[0,34,115]; LABELS=["a","b","c"]   # 34 Ma is the Eocene-Oligocene transition
 proj=ccrs.Mollweide(central_longitude=0)
 # The maps get the full column. Panel (d) starts from the same cell and is then fitted
 # to them further down, so that its axis labels finish flush with the map edges rather
@@ -142,9 +142,10 @@ for ax,T,lab in zip(axes,TIMES,LABELS):
                 va="center", ha="left", zorder=10,
                 path_effects=[_pe.withStroke(linewidth=1.8, foreground="white")])
     # Panel letters are placed later, in figure coordinates, so that all four line up.
-    # age label shifted ~4 mm left of its former position so it clears the Mollweide outline
+    # age label sits clear of the Mollweide outline: 5.5 mm left of where it started,
+    # and close to the top of the panel box
     _panel_mm = ax.get_position().width*fig.get_size_inches()[0]*25.4
-    ax.text(0.145-4.0/_panel_mm, 0.972, f"{T} Ma", transform=ax.transAxes, fontsize=10,
+    ax.text(0.145-5.5/_panel_mm, 0.985, f"{T} Ma", transform=ax.transAxes, fontsize=10,
             va="top", ha="left", zorder=10)
     print(f"{T} Ma done {round(time.time()-t0,1)}s")
 
@@ -212,15 +213,20 @@ _d0, _d1 = _ink_span([axd, _bx])
 print(f"  panel (d) fitted to the maps: {axd.get_position().width*_mm:.0f} mm frame, "
       f"ink {(_d1-_d0)*_mm:.1f} mm against the maps' {(_t1-_t0)*_mm:.1f} mm")
 
-# Panel letters in FIGURE coordinates at one x. Axes coordinates will not do it: the
-# Mollweide panels are aspect-constrained, so their drawn box is narrower than the
-# gridspec cell and the same transAxes offset lands in a different place on each.
-# Left of panel (d) two-line y-label, which starts at x = 0.058 of the figure width;
-# the gridspec left margin was widened to 0.165 to make that room.
-_LETTER_X = 0.018
+# Panel letters in FIGURE coordinates at one x, so that all four line up: axes
+# coordinates will not do it, because the aspect-constrained maps and the fitted budget
+# panel have drawn boxes of different widths. The column sits on the left edge of the
+# drawn content, so the letters add no width to the figure. (a) to (c) go inside the top
+# left of their map box, where the Mollweide outline is far to the right. (d) goes above
+# panel (d) rather than inside it, because its two-line y-label runs the full height of
+# that panel at this x; nothing else is drawn out here, the event labels being inside
+# the panel's own x range.
+_LETTER_X = axes[0].get_position().x0
 for _a, _lab in zip(axes + [axd], "abcd"):
-    fig.text(_LETTER_X, _a.get_position().y1, _lab, fontsize=13, fontweight="bold",
-             va="top", ha="left", zorder=10)
+    _va = "bottom" if _a is axd else "top"
+    _y = _a.get_position().y1 + (0.4/(fig.get_size_inches()[1]*25.4) if _a is axd else 0.0)
+    fig.text(_LETTER_X, _y, _lab, fontsize=13, fontweight="bold",
+             va=_va, ha="left", zorder=10)
 print(f"  budget panel: r = {_series['r']:.2f} between net gain and area above the CCD")
 _bad=_cb.text_collisions(fig,[(axd,True),(_bx,False),(cax,False)])
 print("  text collisions (panel d): "+(", ".join(_bad) if _bad else "none"))
