@@ -100,38 +100,24 @@ def _r2(*cols):
     Xk=np.column_stack([np.ones(len(Y))]+list(cols)); bk,_,_,_=np.linalg.lstsq(Xk,Y,rcond=None)
     return 1-np.sum((Y-Xk@bk)**2)/np.sum((Y-Y.mean())**2)
 _sl, _dg = preds["Sea level"], preds["Total degassing"]
-_uniq_sl = R2-_r2(_dg); _uniq_dg = R2-_r2(_sl); _shared = R2-_uniq_sl-_uniq_dg
-# The whole partition, not just the two unique slivers. Sea level and total degassing
-# are themselves correlated over 0-52 Ma - both are largely one Cenozoic trend - so most
-# of the variance they explain is common to them and cannot be assigned to either.
-# Showing only the unique shares invited the reading that degassing explains 0.11 "against"
-# sea level's 0.19, when the honest statement is that 0.19 is the only part that belongs
-# to sea level alone, 0.11 the only part that belongs to degassing alone, and the large
-# middle block belongs to neither on its own.
-# One-line tick labels: two-line ones collided at this panel width. What "only" and
-# "shared" mean goes in the caption.
-_parts=[("Sea level",_uniq_sl,"#009e73"),
-        ("Shared",_shared,"0.75"),
-        ("Degassing",_uniq_dg,"#e69f00")]
-_bars=axb1.bar([p[0] for p in _parts],[p[1] for p in _parts],width=0.62,
-               color=[p[2] for p in _parts],edgecolor="black")
-# The degassing share is hatched because it enters with the wrong sign. b[1] and b[2] are
-# the standardised coefficients for sea level and total degassing; the CCD is in the sense
-# the figures plot it, so acidification by added CO2 requires a POSITIVE coefficient. Sea
-# level takes one, degassing takes a negative one, meaning the fit improves by making a
-# higher outflux go with a DEEPER CCD. Its variance share is therefore a trend running the
-# wrong way, not support for a CO2 control, and the panel has to say so.
-_bars[2].set_hatch("///")
-axb1.text(0,_uniq_sl+0.055,f"β = {b[1]:+.2f}",ha="center",va="bottom",
-          fontsize=PT_TICK-0.5,color="0.25")
-axb1.text(2,_uniq_dg+0.055,f"β = {b[2]:+.2f}\nwrong sign",ha="center",va="bottom",
-          fontsize=PT_TICK-0.5,color="0.25",linespacing=1.35)
-axb1.set_ylabel("Share of CCD variance explained (R²)",fontsize=PT_LABEL)
-axb1.set_ylim(0,0.68); axb1.set_xlim(-0.6,2.6); axb1.tick_params(labelsize=PT_TICK)
-for i,(_lab,_v,_c) in enumerate(_parts):
-    axb1.text(i,_v+0.012,f"{_v:.2f}",ha="center",va="bottom",fontsize=PT_TICK)
-axb1.text(0.03,0.97,f"Both together\nR² = {R2:.2f}",transform=axb1.transAxes,
-          ha="left",va="top",fontsize=PT_TICK)
+_r2_sl, _r2_dg = _r2(_sl), _r2(_dg)
+# What each predictor explains ON ITS OWN, and the sign it does it with. An earlier
+# version split the joint fit into unique and shared variance. That partition is correct
+# but reads as though degassing owned a share of the explanation: the two predictors are
+# collinear (both are one Cenozoic trend), so most of what either explains the other
+# explains too, and the leftover unique slivers are not a measure of mechanism. The sign
+# is. Acidification by added CO2 requires a POSITIVE coefficient here, because the CCD is
+# in the sense the figures plot it; degassing takes a negative one, so its variance is
+# explained in the wrong direction and cannot support a CO2 control however large it is.
+_bars=axb1.bar(["Sea level","Total degassing"],[_r2_sl,_r2_dg],width=0.55,
+               color=["#009e73","#e69f00"],edgecolor="black")
+_bars[1].set_hatch("///")
+axb1.set_ylabel("Variance of the CCD explained (R²)",fontsize=PT_LABEL)
+axb1.set_ylim(0,1.0); axb1.set_xlim(-0.6,1.6); axb1.tick_params(labelsize=PT_TICK)
+axb1.text(0,_r2_sl+0.02,f"{_r2_sl:.2f}\nβ = {b[1]:+.2f}",ha="center",va="bottom",
+          fontsize=PT_TICK,color="0.15",linespacing=1.35)
+axb1.text(1,_r2_dg+0.02,f"{_r2_dg:.2f}\nβ = {b[2]:+.2f}\nwrong sign",ha="center",va="bottom",
+          fontsize=PT_TICK,color="0.15",linespacing=1.35)
 axb1.spines["top"].set_visible(False); axb1.spines["right"].set_visible(False)
 
 # ---- (c) correlation of each component with the CCD --------------------------
