@@ -75,7 +75,11 @@ iax.scatter(x,y,s=9,facecolors="none",edgecolors="black",linewidths=0.6,zorder=3
 xx=np.linspace(x.min(),x.max(),100); iax.plot(xx,rma["slope"]*xx+rma["intercept"],color="black",lw=1.4,zorder=4)
 iax.invert_yaxis(); iax.set_xlabel("Sea level (m)",fontsize=9.5,labelpad=1.5); iax.set_ylabel("CCD (m)",fontsize=9.5,labelpad=1.5)
 iax.tick_params(labelsize=8.5)
-iax.text(0.04,0.96,f"CCD = {rma['intercept']:.0f} − {abs(rma['slope']):.2f}×SL\nr = {rma['r']:.2f},  R² = {rma['r2']:.2f}",
+# No signed r here. This fit is on CCD positive downward, so its r would read -0.86,
+# while every correlation reported in the paper takes the CCD in the sense this figure
+# plots it, where the same relationship is +0.86. The slope's minus sign already says
+# that higher sea level goes with a shallower CCD, and R2 carries the strength.
+iax.text(0.04,0.96,f"CCD = {rma['intercept']:.0f} − {abs(rma['slope']):.2f}×SL\nR² = {rma['r2']:.2f}",
          transform=iax.transAxes,fontsize=9,va="top",ha="left",bbox=dict(boxstyle="round,pad=0.25",fc="white",ec="0.5",lw=0.5,alpha=0.8))
 for s in iax.spines.values(): s.set_edgecolor("0.4")
 
