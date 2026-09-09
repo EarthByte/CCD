@@ -17,7 +17,6 @@ from pathlib import Path
 import numpy as np, pandas as pd
 from scipy import stats
 import matplotlib; matplotlib.use("Agg")
-import matplotlib.pyplot as plt
 
 # ---- path resolution -------------------------------------------------------
 # Works both in the working tree (this script in Paper/, the workflow in a
@@ -138,7 +137,7 @@ preds={"sea_level":z(sub["sl"]), "total_degassing":z(sub["gross_outflux"])}
 X=np.column_stack([preds[k] for k in preds]); X=np.column_stack([np.ones(len(Y)),X])
 beta,_,_,_=np.linalg.lstsq(X,Y,rcond=None)
 yhat=X@beta; R2=1-np.sum((Y-yhat)**2)/np.sum((Y-Y.mean())**2)
-print(f"\n================ MULTIPLE REGRESSION (0-52 Ma, standardized) ================")
+print("\n================ MULTIPLE REGRESSION (0-52 Ma, standardized) ================")
 print(f"CCD ~ sea_level + total_degassing   R2_full={R2:.2f}")
 for name,b in zip(["intercept"]+list(preds),beta):
     print(f"  {name:16s} std beta = {b:+.2f}")
@@ -149,6 +148,48 @@ for drop in preds:
     bk,_,_,_=np.linalg.lstsq(Xk,Y,rcond=None); yk=Xk@bk
     R2k=1-np.sum((Y-yk)**2)/np.sum((Y-Y.mean())**2)
     print(f"  incremental R2 of {drop:16s} = {R2-R2k:+.2f}")
+
+# ---------- per-component correlations, with the sed-rate scenario spread ----------
+# Table S1 and Figure 4c both read this file, so the numbers cannot drift apart.
+# The spread is the model's own min/mean/max carbonate sed-rate scenarios. It is a
+# sensitivity range, NOT a confidence interval: the statistical interval is useless
+# here, because the CCD and the fluxes are so strongly autocorrelated that the
+# effective sample size falls to its floor and the 95% interval on every one of these
+# correlations covers -1 to +1. That is the substantive result, and is why none of
+# them is significant once the autocorrelation is accounted for.
+_COMPONENTS = [
+    ("Mid-ocean ridge",    "ridge_outflux",                       True),
+    ("Rift",               "rift_outflux_biased",                 True),
+    ("Carbonate platform", "carbonate_platform_outflux",          True),
+    ("Arc (subduction)",   "subduction_outflux",                  False),
+    ("Total outflux",      "gross_atmospheric_outflux_biased_rift", False),
+]
+_rows = []
+_m52 = (D["age"] <= 52).to_numpy()
+_depth52 = D["depth"].to_numpy()[_m52]
+for _label, _base, _indep in _COMPONENTS:
+    _r = {}
+    for _sc in ("mean", "min", "max"):
+        _col = f"{_base}_{_sc}"
+        if _col not in atm.columns:
+            _r[_sc] = (np.nan, np.nan, np.nan); continue
+        _y = onto(atm["age"], atm[_col])[_m52]
+        _r[_sc] = ar1_corr(_depth52, _y)
+    # Range across all three scenarios, the mean included: a min or max sed-rate grid
+    # does not have to bracket the mean one, and on the figure the marker has to sit
+    # inside its own bar.
+    _all = [_r[_sc][0] for _sc in ("mean", "min", "max")]
+    _rows.append({"component": _label, "ccd_independent": _indep,
+                  "r": _r["mean"][0], "r_min_scenario": min(_all), "r_max_scenario": max(_all),
+                  "n_effective": _r["mean"][1], "p_ar1": _r["mean"][2]})
+_cc = pd.DataFrame(_rows)
+_cc.to_csv(_HERE / "component_correlations.csv", index=False)
+print("\n================ COMPONENT CORRELATIONS (0-52 Ma) ================")
+for _row in _rows:
+    print(f"  {_row['component']:20s} r = {_row['r']:+.2f}  "
+          f"scenarios [{_row['r_min_scenario']:+.2f}, {_row['r_max_scenario']:+.2f}]  "
+          f"n_eff = {_row['n_effective']:.1f}  p = {_row['p_ar1']:.2f}"
+          f"{'' if _row['ccd_independent'] else '   (CCD-derived)'}")
 
 D.to_csv(_HERE / "attribution_matched_series.csv", index=False)
 print("\nsaved matched series ->", _HERE / "attribution_matched_series.csv")
