@@ -114,9 +114,14 @@ _bars=axb1.bar(["Sea level","Total degassing"],[_r2_sl,_r2_dg],width=0.55,
 _bars[1].set_hatch("///")
 axb1.set_ylabel("Variance of the CCD explained (R²)",fontsize=PT_LABEL)
 axb1.set_ylim(0,1.0); axb1.set_xlim(-0.6,1.6); axb1.tick_params(labelsize=PT_TICK)
-axb1.text(0,_r2_sl+0.02,f"{_r2_sl:.2f}\nβ = {b[1]:+.2f}",ha="center",va="bottom",
-          fontsize=PT_TICK,color="0.15",linespacing=1.35)
-axb1.text(1,_r2_dg+0.02,f"{_r2_dg:.2f}\nβ = {b[2]:+.2f}\nwrong sign",ha="center",va="bottom",
+# No standardised coefficients on the panel. They said only that the sign survives
+# holding the other predictor fixed, which is a robustness detail rather than a result,
+# and beta needs defining for a general readership in a caption that already carries the
+# sign convention, the hatching, the scenario bars and the p values. The hatch and the
+# label say what matters: this variance is explained in the wrong direction.
+axb1.text(0,_r2_sl+0.02,f"{_r2_sl:.2f}",ha="center",va="bottom",
+          fontsize=PT_TICK,color="0.15")
+axb1.text(1,_r2_dg+0.02,f"{_r2_dg:.2f}\nwrong sign",ha="center",va="bottom",
           fontsize=PT_TICK,color="0.15",linespacing=1.35)
 axb1.spines["top"].set_visible(False); axb1.spines["right"].set_visible(False)
 
