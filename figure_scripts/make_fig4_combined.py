@@ -2,8 +2,8 @@
 """Fig. 4 (combined):
    (a) global CCD against the recomputed solid-Earth carbon outflux, by component and
        in total, the total being the predictor the two-predictor model actually uses;
-   (b) incremental variance of the two predictors, 0-52 Ma;
-   (c) zero-lag correlation of each outflux component with the CCD, 0-52 Ma.
+   (b) zero-lag correlation of sea level and of each outflux component with the CCD;
+   (c) variance of the CCD each predictor explains on its own, 0-52 Ma.
 Reads attribution_matched_series.csv and component_correlations.csv, both written by
 attribution_closure_analysis.py, so the panels and the reported numbers cannot drift."""
 from pathlib import Path
@@ -33,9 +33,11 @@ if not _CCFILE.exists():
 CC = pd.read_csv(_CCFILE)
 age=D["age"].to_numpy(); ccd=-D["depth"].to_numpy()
 
-# One colour per outflux component, used by both panel (a) and panel (c).
-COL = {"Mid-ocean ridge":"#0072b2", "Rift":"#9467bd", "Carbonate platform":"#8c564b",
-       "Arc (subduction)":"#d1495b", "Total outflux":"#3d3d3d"}
+# One colour per series, used wherever that series appears: the curves in (a), the
+# markers in (b) and the bars in (c). Sea level appears only in (b) and (c).
+COL = {"Sea level":"#009e73", "Mid-ocean ridge":"#0072b2", "Rift":"#9467bd",
+       "Carbonate platform":"#8c564b", "Arc (subduction)":"#d1495b",
+       "Total outflux":"#3d3d3d"}
 PT_TICK, PT_LABEL, PT_LEG = 9.5, 10, 9
 
 # Panel (a) spans the width; (b) and (c) share the row below it. The lag panel is gone:
@@ -46,7 +48,9 @@ PT_TICK, PT_LABEL, PT_LEG = 9.5, 10, 9
 fig=plt.figure(figsize=(7.48,8.6))
 gs=fig.add_gridspec(2,2,height_ratios=[1.34,0.95],hspace=0.34,wspace=0.62,
                     top=0.835,bottom=0.075,left=0.095,right=0.895)
-axa=fig.add_subplot(gs[0,:]); axb1=fig.add_subplot(gs[1,0]); axc=fig.add_subplot(gs[1,1])
+# Correlations first, then the variance: the reader needs to see which fluxes point the
+# right way before being shown how much variance any of them accounts for.
+axa=fig.add_subplot(gs[0,:]); axc=fig.add_subplot(gs[1,0]); axb1=fig.add_subplot(gs[1,1])
 
 # ---- (a) CCD against the carbon outflux -------------------------------------
 axa.plot(age,ccd,color="black",lw=2.4,label="Global CCD (this study)")
@@ -84,10 +88,10 @@ axa.legend(l1+l2,la1+la2,fontsize=PT_LEG,loc="lower left",
            bbox_to_anchor=(0.0,1.07,1.0,0.16),mode="expand",ncol=2,
            frameon=False,borderaxespad=0.0,handlelength=2.4,columnspacing=1.4)
 
-# ---- (b) incremental variance ------------------------------------------------
+# ---- (c) variance each predictor explains on its own --------------------------
 def z(a): a=np.asarray(a,float); return (a-a.mean())/a.std()
 # CCD in the sense the figures plot it, so the standardised coefficients below carry the
-# same sign convention as panel (c): positive means the predictor rises as the CCD shoals.
+# same sign convention as panel (b): positive means the predictor rises as the CCD shoals.
 sub=D[D["age"]<=52]; Y=z(-sub["depth"])
 # Sea level and CO2 outgassing only. The pelagic-carbonate sink is not a third
 # independent factor: sea level is itself largely a proxy for the shift of carbonate
@@ -109,9 +113,9 @@ _r2_sl, _r2_dg = _r2(_sl), _r2(_dg)
 # is. Acidification by added CO2 requires a POSITIVE coefficient here, because the CCD is
 # in the sense the figures plot it; degassing takes a negative one, so its variance is
 # explained in the wrong direction and cannot support a CO2 control however large it is.
-_bars=axb1.bar(["Sea level","Total degassing"],[_r2_sl,_r2_dg],width=0.55,
-               color=["#009e73","#e69f00"],edgecolor="black")
-_bars[1].set_hatch("///")
+_bars=axb1.bar(["Sea level","Total outflux"],[_r2_sl,_r2_dg],width=0.55,
+               color=[COL["Sea level"],COL["Total outflux"]],edgecolor="black")
+_bars[1].set_hatch("///"); _bars[1].set_edgecolor("white")
 axb1.set_ylabel("Variance of the CCD explained (R²)",fontsize=PT_LABEL)
 axb1.set_ylim(0,1.0); axb1.set_xlim(-0.6,1.6); axb1.tick_params(labelsize=PT_TICK)
 # No standardised coefficients on the panel. They said only that the sign survives
@@ -125,7 +129,7 @@ axb1.text(1,_r2_dg+0.02,f"{_r2_dg:.2f}\nwrong sign",ha="center",va="bottom",
           fontsize=PT_TICK,color="0.15",linespacing=1.35)
 axb1.spines["top"].set_visible(False); axb1.spines["right"].set_visible(False)
 
-# ---- (c) correlation of each component with the CCD --------------------------
+# ---- (b) correlation of sea level and each outflux component with the CCD -----
 # Bars run from the lowest to the highest correlation across the model's three
 # carbonate sed-rate scenarios; the marker is the mean scenario. That range is a
 # sensitivity, not a confidence interval - see the note drawn in the panel.
@@ -165,8 +169,8 @@ print(f"  caption facts: positive = flux rises as the CCD shoals; "
 _LETTER_KW = dict(fontsize=14, fontweight="bold", va="bottom", ha="right")
 _LX = axa.get_position().x0 - 0.08
 fig.text(_LX, axa.get_position().y1 + 0.062, "a", **_LETTER_KW)
-fig.text(_LX, axb1.get_position().y1 + 0.008, "b", **_LETTER_KW)
-axc.text(-0.10, 1.02, "c", transform=axc.transAxes, **_LETTER_KW)
+fig.text(_LX, axc.get_position().y1 + 0.008, "b", **_LETTER_KW)
+axb1.text(-0.10, 1.02, "c", transform=axb1.transAxes, **_LETTER_KW)
 
 # ---- text-collision check ----------------------------------------------------
 fig.canvas.draw(); _r=fig.canvas.get_renderer()

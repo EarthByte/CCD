@@ -196,6 +196,14 @@ for _label, _base, _indep in _COMPONENTS:
     _rows.append({"component": _label, "ccd_independent": _indep,
                   "r": _r["mean"][0], "r_min_scenario": min(_all), "r_max_scenario": max(_all),
                   "n_effective": _r["mean"][1], "p_ar1": _r["mean"][2]})
+# Sea level goes in the same panel as the degassing components, as the reference the
+# whole comparison is against. It carries no scenario range, because it is an external
+# record and does not depend on the model's carbonate sedimentation-rate scenarios.
+_sl52 = D["sl"].to_numpy()[_m52]
+_r_sl, _neff_sl, _p_sl = ar1_corr(_depth52, _sl52)
+_rows.insert(0, {"component": "Sea level", "ccd_independent": True,
+                 "r": _r_sl, "r_min_scenario": _r_sl, "r_max_scenario": _r_sl,
+                 "n_effective": _neff_sl, "p_ar1": _p_sl})
 _cc = pd.DataFrame(_rows)
 _cc.to_csv(_HERE / "component_correlations.csv", index=False)
 print("\n================ COMPONENT CORRELATIONS (0-52 Ma) ================")
