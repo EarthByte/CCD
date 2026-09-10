@@ -193,7 +193,7 @@ for _label, _base, _indep in _COMPONENTS:
     # does not have to bracket the mean one, and on the figure the marker has to sit
     # inside its own bar.
     _all = [_r[_sc][0] for _sc in ("mean", "min", "max")]
-    _rows.append({"component": _label, "ccd_independent": _indep,
+    _rows.append({"component": _label, "ccd_independent": _indep, "is_sink": False,
                   "r": _r["mean"][0], "r_min_scenario": min(_all), "r_max_scenario": max(_all),
                   "n_effective": _r["mean"][1], "p_ar1": _r["mean"][2]})
 # Sea level goes in the same panel as the degassing components, as the reference the
@@ -201,9 +201,24 @@ for _label, _base, _indep in _COMPONENTS:
 # record and does not depend on the model's carbonate sedimentation-rate scenarios.
 _sl52 = D["sl"].to_numpy()[_m52]
 _r_sl, _neff_sl, _p_sl = ar1_corr(_depth52, _sl52)
-_rows.insert(0, {"component": "Sea level", "ccd_independent": True,
+_rows.insert(0, {"component": "Sea level", "ccd_independent": True, "is_sink": False,
                  "r": _r_sl, "r_min_scenario": _r_sl, "r_max_scenario": _r_sl,
                  "n_effective": _neff_sl, "p_ar1": _p_sl})
+# Carbon taken up by seafloor weathering and carried down on altered oceanic crust. The
+# degassing model computes this explicitly, so it is not an unconsidered term: it belongs
+# in the comparison. It is a SINK, so the sign a CO2 control predicts is the opposite of
+# the one for the sources - more uptake means less CO2, hence a deeper CCD. It is
+# independent of the CCD, since only the sediment term uses carbonate thickness.
+_crust = {}
+for _sc in ("mean", "min", "max"):
+    _crust[_sc] = ar1_corr(_depth52, onto(_pli.index.to_numpy(float),
+                                          _pli[("crust", _sc)].to_numpy())[_m52])
+_call = [_crust[_sc][0] for _sc in ("mean", "min", "max")]
+_rows.append({"component": "Altered oceanic crust", "ccd_independent": True, "is_sink": True,
+              "r": _crust["mean"][0], "r_min_scenario": min(_call),
+              "r_max_scenario": max(_call), "n_effective": _crust["mean"][1],
+              "p_ar1": _crust["mean"][2]})
+
 _cc = pd.DataFrame(_rows)
 _cc.to_csv(_HERE / "component_correlations.csv", index=False)
 print("\n================ COMPONENT CORRELATIONS (0-52 Ma) ================")

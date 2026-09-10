@@ -37,7 +37,7 @@ age=D["age"].to_numpy(); ccd=-D["depth"].to_numpy()
 # markers in (b) and the bars in (c). Sea level appears only in (b) and (c).
 COL = {"Sea level":"#009e73", "Mid-ocean ridge":"#0072b2", "Rift":"#9467bd",
        "Carbonate platform":"#8c564b", "Arc (subduction)":"#d1495b",
-       "Total outflux":"#3d3d3d"}
+       "Total outflux":"#3d3d3d", "Altered oceanic crust":"#e69f00"}
 PT_TICK, PT_LABEL, PT_LEG = 9.5, 10, 9
 
 # Panel (a) spans the width; (b) and (c) share the row below it. The lag panel is gone:
@@ -142,7 +142,10 @@ _y = np.arange(len(_cc))
 # small enough to state in the caption instead.
 for _i, _row in _cc.iterrows():
     _c = COL.get(_row["component"], "0.4")
-    axc.plot([_row["r"]], [_i], marker="o", ms=7.5, zorder=3,
+    # squares are carbon SINKS, circles sources and sea level. A sink reverses the sign a
+    # CO2 control predicts: more uptake means less CO2 and so a deeper CCD.
+    _m = "s" if bool(_row.get("is_sink", False)) else "o"
+    axc.plot([_row["r"]], [_i], marker=_m, ms=7.5 if _m == "o" else 6.8, zorder=3,
              mfc=_c if _row["ccd_independent"] else "white", mec=_c, mew=1.8)
 axc.axvline(0.0, color="0.35", lw=0.9, zorder=1)
 axc.set_yticks(_y); axc.set_yticklabels(_cc["component"], fontsize=PT_TICK)
