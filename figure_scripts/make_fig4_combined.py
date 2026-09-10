@@ -135,12 +135,15 @@ axb1.spines["top"].set_visible(False); axb1.spines["right"].set_visible(False)
 # sensitivity, not a confidence interval - see the note drawn in the panel.
 _cc = CC.iloc[::-1].reset_index(drop=True)      # first row of the file at the top
 _y = np.arange(len(_cc))
+# No scenario bars. Across the model's minimum, mean and maximum sedimentation-rate
+# scenarios these correlations move by at most 0.17 and for several series not at all,
+# so at panel scale the bars were invisible where they existed and absent where they did
+# not, which read as though some series carried uncertainty and others none. The range is
+# small enough to state in the caption instead.
 for _i, _row in _cc.iterrows():
     _c = COL.get(_row["component"], "0.4")
-    axc.plot([_row["r_min_scenario"], _row["r_max_scenario"]], [_i, _i],
-             color=_c, lw=3.0, solid_capstyle="butt", alpha=0.45, zorder=2)
-    axc.plot([_row["r"]], [_i], marker="o", ms=7.0, zorder=3,
-             mfc=_c if _row["ccd_independent"] else "white", mec=_c, mew=1.6)
+    axc.plot([_row["r"]], [_i], marker="o", ms=7.5, zorder=3,
+             mfc=_c if _row["ccd_independent"] else "white", mec=_c, mew=1.8)
 axc.axvline(0.0, color="0.35", lw=0.9, zorder=1)
 axc.set_yticks(_y); axc.set_yticklabels(_cc["component"], fontsize=PT_TICK)
 axc.set_ylim(-0.7, len(_cc)-0.3)
