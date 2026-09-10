@@ -206,16 +206,20 @@ _rows.insert(0, {"component": "Sea level", "ccd_independent": True, "is_sink": F
                  "n_effective": _neff_sl, "p_ar1": _p_sl})
 # Carbon taken up by seafloor weathering and carried down on altered oceanic crust. The
 # degassing model computes this explicitly, so it is not an unconsidered term: it belongs
-# in the comparison. It is a SINK, so the sign a CO2 control predicts is the opposite of
-# the one for the sources - more uptake means less CO2, hence a deeper CCD. It is
-# independent of the CCD, since only the sediment term uses carbonate thickness.
+# in the comparison. It is independent of the CCD, since only the sediment term uses
+# carbonate thickness.
 _crust = {}
 for _sc in ("mean", "min", "max"):
     _crust[_sc] = ar1_corr(_depth52, onto(_pli.index.to_numpy(float),
                                           _pli[("crust", _sc)].to_numpy())[_m52])
-_call = [_crust[_sc][0] for _sc in ("mean", "min", "max")]
+# Entered with its sign REVERSED, as the flux's contribution to CO2 in the ocean and
+# atmosphere rather than as an uptake. Uptake removes CO2, so a CO2 control predicts the
+# opposite sign for it than for a source, and plotting the raw correlation would put one
+# point on the panel that has to be read backwards. Negated, every point means the same
+# thing: positive is the sign a CO2 control requires.
+_call = [-_crust[_sc][0] for _sc in ("mean", "min", "max")]
 _rows.append({"component": "Altered oceanic crust", "ccd_independent": True, "is_sink": True,
-              "r": _crust["mean"][0], "r_min_scenario": min(_call),
+              "r": -_crust["mean"][0], "r_min_scenario": min(_call),
               "r_max_scenario": max(_call), "n_effective": _crust["mean"][1],
               "p_ar1": _crust["mean"][2]})
 

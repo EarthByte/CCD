@@ -142,8 +142,10 @@ _y = np.arange(len(_cc))
 # small enough to state in the caption instead.
 for _i, _row in _cc.iterrows():
     _c = COL.get(_row["component"], "0.4")
-    # squares are carbon SINKS, circles sources and sea level. A sink reverses the sign a
-    # CO2 control predicts: more uptake means less CO2 and so a deeper CCD.
+    # Squares mark carbon sinks, circles sources and sea level. A sink is entered with its
+    # sign reversed, as its contribution to CO2 in the ocean and atmosphere, so that every
+    # point on this axis carries the same meaning and positive is always the sign a CO2
+    # control requires.
     _m = "s" if bool(_row.get("is_sink", False)) else "o"
     axc.plot([_row["r"]], [_i], marker=_m, ms=7.5 if _m == "o" else 6.8, zorder=3,
              mfc=_c if _row["ccd_independent"] else "white", mec=_c, mew=1.8)
