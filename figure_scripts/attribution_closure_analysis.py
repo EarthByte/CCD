@@ -94,6 +94,9 @@ _pli.index = pd.to_numeric(_pli.index, errors="coerce")
 _pli = _pli[np.isfinite(_pli.index)]
 _bio = _pli[("sediments", "mean")].to_numpy() + _pli[("crust", "mean")].to_numpy()
 D["sink_plate_sed"] = onto(_pli.index.to_numpy(float), _bio)
+# Carbon taken up by seafloor weathering and carried down on altered oceanic crust, kept
+# as its own series so Figure 4a can draw it alongside the outfluxes.
+D["crust_sink"] = onto(_pli.index.to_numpy(float), _pli[("crust", "mean")].to_numpy())
 
 # ---------- sign convention for everything reported below ----------
 # Correlations and regression coefficients are reported against the CCD AS THE FIGURES
@@ -218,7 +221,7 @@ for _sc in ("mean", "min", "max"):
 # point on the panel that has to be read backwards. Negated, every point means the same
 # thing: positive is the sign a CO2 control requires.
 _call = [-_crust[_sc][0] for _sc in ("mean", "min", "max")]
-_rows.append({"component": "Altered oceanic crust", "ccd_independent": True, "is_sink": True,
+_rows.append({"component": "Seafloor weathering", "ccd_independent": True, "is_sink": True,
               "r": -_crust["mean"][0], "r_min_scenario": min(_call),
               "r_max_scenario": max(_call), "n_effective": _crust["mean"][1],
               "p_ar1": _crust["mean"][2]})

@@ -37,7 +37,7 @@ age=D["age"].to_numpy(); ccd=-D["depth"].to_numpy()
 # markers in (b) and the bars in (c). Sea level appears only in (b) and (c).
 COL = {"Sea level":"#009e73", "Mid-ocean ridge":"#0072b2", "Rift":"#9467bd",
        "Carbonate platform":"#8c564b", "Arc (subduction)":"#d1495b",
-       "Total outflux":"#3d3d3d", "Altered oceanic crust":"#e69f00"}
+       "Total outflux":"#3d3d3d", "Seafloor weathering":"#e69f00"}
 PT_TICK, PT_LABEL, PT_LEG = 9.5, 10, 9
 
 # Panel (a) spans the width; (b) and (c) share the row below it. The lag panel is gone:
@@ -70,6 +70,13 @@ ax2.plot(age,D["MOR_ridge"],color=COL["Mid-ocean ridge"],lw=1.6,
 ax2.plot(age,D["rift"],color=COL["Rift"],lw=1.2,label="Rift outgassing")
 ax2.plot(age,D["carb_platform"],color=COL["Carbonate platform"],lw=1.2,
          label="Arc outgassing (carbonate platforms)")
+# The one carbon SINK the model computes, drawn with the opposite sign to the outfluxes
+# so the axis reads as carbon added to, or removed from, the ocean and atmosphere. It
+# pushes the axis below zero and compresses the outflux curves, which is the price of
+# showing a sink and a source on one scale.
+ax2.plot(age,-D["crust_sink"],color=COL["Seafloor weathering"],lw=1.4,ls=(0,(4,1.4,1,1.4)),
+         label="Seafloor weathering (carbon uptake)")
+ax2.axhline(0.0,color="0.55",lw=0.7,zorder=1)
 # Carbon, not CO2: these fluxes are in megatonnes of CARBON per year, and the two differ
 # by the molar mass ratio 44/12.
 ax2.set_ylabel("Carbon outflux (Mt C yr$^{-1}$)",fontsize=PT_LABEL)
