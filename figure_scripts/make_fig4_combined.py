@@ -184,8 +184,14 @@ print(f"  caption facts: positive = flux rises as the CCD shoals; "
 _LETTER_KW = dict(fontsize=14, fontweight="bold", va="bottom", ha="right")
 _LX = axa.get_position().x0 - 0.08
 fig.text(_LX, axa.get_position().y1 + 0.062, "a", **_LETTER_KW)
-fig.text(_LX, axc.get_position().y1 + 0.008, "b", **_LETTER_KW)
-axb1.text(-0.10, 1.02, "c", transform=axb1.transAxes, **_LETTER_KW)
+# Both second-row letters in figure coordinates at ONE height, each above its own panel's
+# left edge. (c) sat at 1.02 in its own axes coordinates, which is nearer its frame than
+# (b) was to hers, so the two were neither level nor clear of the plots. Raised together.
+_ROW2_Y = max(axc.get_position().y1, axb1.get_position().y1) + 0.022
+fig.text(_LX, _ROW2_Y, "b", **_LETTER_KW)
+fig.text(axb1.get_position().x0 - 0.03, _ROW2_Y, "c", **_LETTER_KW)
+_mmh = fig.get_size_inches()[1]*25.4
+print(f"  row-2 letters {(_ROW2_Y-axc.get_position().y1)*_mmh:.1f} mm above the panels, level with each other")
 
 # ---- text-collision check ----------------------------------------------------
 fig.canvas.draw(); _r=fig.canvas.get_renderer()
