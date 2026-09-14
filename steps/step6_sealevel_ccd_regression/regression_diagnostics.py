@@ -184,6 +184,20 @@ def run(ccd_path, sea_path, outdir, n_boot=10000, block_len=7, max_lag=10) -> Di
     boot_ci = ci_table(boot)
     boot_ci.to_csv(outdir / "bootstrap_95CI.csv", index=False)
 
+    # Pointwise 95% band for the preferred RMA calibration, built from the JOINT
+    # replicates. The marginal percentiles in bootstrap_95CI.csv cannot give this: slope
+    # and intercept are strongly anti-correlated in a fit, so pairing their extremes
+    # would draw a band several times too wide. Each replicate is evaluated as a line
+    # over the observed sea-level range and the percentiles taken down the columns.
+    _rma_boot = boot[boot["method"] == "RMA"]
+    _xg = np.linspace(float(np.min(x)), float(np.max(x)), 200)
+    _lines = (_rma_boot["slope"].to_numpy()[:, None] * _xg[None, :]
+              + _rma_boot["intercept"].to_numpy()[:, None])
+    _q = np.nanpercentile(_lines, [2.5, 50, 97.5], axis=0)
+    pd.DataFrame({"Sea_level_m": _xg, "CCD_p2.5": _q[0],
+                  "CCD_median": _q[1], "CCD_p97.5": _q[2]}).to_csv(
+        outdir / "bootstrap_band_rma.csv", index=False)
+
     lag = lag_correlation(age, x, y, max_lag_ma=max_lag)
     lag.to_csv(outdir / "lag_correlation.csv", index=False)
 

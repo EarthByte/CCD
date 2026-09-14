@@ -32,6 +32,12 @@ env=rd(CW/"steps/step4_sealevel_envelope/outputs/sea_level_quantile_envelope_0-2
 mt =pd.read_csv(CW/"steps/step6_sealevel_ccd_regression/outputs/diagnostics/matched_timeseries.csv")
 rr =pd.read_csv(CW/"steps/step6_sealevel_ccd_regression/outputs/diagnostics/regression_results.csv")
 rma=rr[rr["method"]=="RMA"].iloc[0]
+# Pointwise 95% envelope of the moving-block bootstrap lines, written by step 6 from the
+# joint replicates. The marginal slope and intercept intervals cannot be combined into
+# this: the two are strongly anti-correlated, so pairing their extremes draws a band
+# several times too wide.
+_bandf=CW/"steps/step6_sealevel_ccd_regression/outputs/diagnostics/bootstrap_band_rma.csv"
+band=pd.read_csv(_bandf) if _bandf.exists() else None
 # panel b data
 hyb=rd(FIGDIR/"CCD_hybrid_DM2026.txt",["age","ccd","lo","hi"]).dropna()
 pred=rd(CW/"steps/step6_sealevel_ccd_regression/outputs/predicted_ccd_sl_0-205Ma.txt",["age","ccd","lo","hi"]).dropna()
@@ -39,7 +45,8 @@ bw =rd(CW/"data/reference_ccd/Boss_Wilkinson_1991_global_CCD_mean.txt",["age","c
 db =rd(CW/"data/reference_ccd/Global_CCD_Delaney_Boyle.txt",["age","ccd"]).dropna(); db["ccd"]=db["ccd"]
 
 fig=plt.figure(figsize=(7.4,8.1))
-gs=fig.add_gridspec(2,1,height_ratios=[1.0,0.98],hspace=0.20,left=0.11,right=0.865,top=0.985,bottom=0.06)
+# hspace 0.235 puts 20.3 mm between the two panels, 3 mm more than the 17.3 mm at 0.20.
+gs=fig.add_gridspec(2,1,height_ratios=[1.0,0.98],hspace=0.235,left=0.11,right=0.865,top=0.985,bottom=0.06)
 
 # ---------------- panel (a) ----------------
 ax=fig.add_subplot(gs[0,0])
@@ -71,6 +78,9 @@ ax.legend(loc="upper left",fontsize=10,frameon=False,ncol=1,handlelength=1.6,bor
 iax=ax.inset_axes([0.352,0.125+3.0/_ah_mm,0.35,0.40-2.0/_ah_mm],zorder=8)
 iax.set_facecolor("white"); iax.patch.set_alpha(1.0)
 x=mt["Sea_level_m"].values; y=mt["CCD_m_pos_down"].values
+if band is not None:
+    iax.fill_between(band["Sea_level_m"],band["CCD_p2.5"],band["CCD_p97.5"],
+                     color="0.55",alpha=0.22,lw=0,zorder=2)
 iax.scatter(x,y,s=9,facecolors="none",edgecolors="black",linewidths=0.6,zorder=3)
 xx=np.linspace(x.min(),x.max(),100); iax.plot(xx,rma["slope"]*xx+rma["intercept"],color="black",lw=1.4,zorder=4)
 iax.invert_yaxis(); iax.set_xlabel("Sea level (m)",fontsize=9.5,labelpad=1.5); iax.set_ylabel("CCD (m)",fontsize=9.5,labelpad=1.5)
