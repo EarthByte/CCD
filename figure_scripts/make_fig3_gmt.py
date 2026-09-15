@@ -96,6 +96,49 @@ def export_layers(refresh=False):
         print(f"  [fig3] exported layers for {t} Ma")
 
 
+# Only the boundaries that are plate boundaries in the ordinary sense. The exported
+# file also holds the edges of the deforming networks and the various crust-type and
+# terrane lines the model carries (unclassified, extended continental crust, slab edges,
+# inferred palaeo-boundaries), which crowd the maps without saying anything about
+# carbonate. Subduction zones stay in so a trench still draws where the polarity layers
+# have no segment for it; where they do, the teeth are drawn on top of the same line.
+BOUNDARY_TYPES = ("gpml:MidOceanRidge", "gpml:Transform", "gpml:SubductionZone")
+
+
+def filtered_boundaries(t):
+    """Copy of the boundary file holding only BOUNDARY_TYPES, written beside it.
+
+    The OGR_GMT export carries feature_type in each segment header, so the selection is
+    made here rather than by re-running the reconstruction.
+    """
+    src = layer(t, "boundaries")
+    if not src.exists():
+        return None
+    out = CACHE / f"boundaries_plate_{t}Ma.gmt"
+    lines = src.read_text(errors="replace").splitlines()
+    kept, keep, head = [], False, []
+    for line in lines:
+        if line.startswith("#") and not line.startswith("# @D"):
+            if not kept and not head:
+                head.append(line)
+            elif line == "# FEATURE_DATA":
+                head.append(line)
+            continue
+        if line.startswith(">"):
+            keep = False
+            pending = [line]
+            continue
+        if line.startswith("# @D"):
+            keep = any(f"|{ft}|" in line for ft in BOUNDARY_TYPES)
+            if keep:
+                kept.extend(pending + [line])
+            continue
+        if keep:
+            kept.append(line)
+    out.write_text("\n".join(["# @VGMT1.0", "# @GLINESTRING", "# FEATURE_DATA"] + kept) + "\n")
+    return out
+
+
 # ---- colour -----------------------------------------------------------------
 def continent_mask(t):
     """The mask grid holds 0 over ocean, and GMT paints a below-range value with the
@@ -160,9 +203,10 @@ def main():
             fig.plot(data=str(layer(t, "continents")), fill=GREY, projection=proj, region="d")
         if layer(t, "coastlines").exists():
             fig.plot(data=str(layer(t, "coastlines")), pen="0.15p,gray40", projection=proj, region="d")
-        if layer(t, "boundaries").exists():
+        bnd = filtered_boundaries(t)
+        if bnd is not None:
             for pen in ("1.1p,white", "0.45p,black"):
-                fig.plot(data=str(layer(t, "boundaries")), pen=pen, projection=proj, region="d")
+                fig.plot(data=str(bnd), pen=pen, projection=proj, region="d")
         for side, flag in (("subduction_left", "+l"), ("subduction_right", "+r")):
             f = layer(t, side)
             if f.exists() and f.stat().st_size > 20:
