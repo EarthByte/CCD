@@ -109,8 +109,10 @@ _ev.draw_events(axb, fontsize=8.5)
 axb.set_xlim(AGEMAX,0); axb.set_ylim(-5300,-2500)
 axb.set_xlabel("Age (Ma)",fontsize=13); axb.set_ylabel("CCD (m)",fontsize=13); axb.tick_params(labelsize=11)
 axr=axb.twinx(); axr.set_ylim(0,300)
-axr.plot(env["age"],env["sl"],color="#27408b",lw=1.2,zorder=3,label="This study")
-axr.plot(haq["age"],haq["sl"],color="#6ca6cd",lw=1.2,zorder=3,label="Haq (1987)")
+# The same curve keeps the same colour in both panels: the hybrid envelope is the red
+# of panel (a), and Haq (1987) its blue, so the reader does not have to re-learn them.
+axr.plot(env["age"],env["sl"],color="#c0392b",lw=1.2,zorder=3,label="This study")
+axr.plot(haq["age"],haq["sl"],color="#2b5fa6",lw=1.2,zorder=3,label="Haq (1987)")
 axr.set_ylabel("Sea level (m)",fontsize=13); axr.tick_params(labelsize=11)
 h1,l1=axb.get_legend_handles_labels(); h2,l2=axr.get_legend_handles_labels()
 order=["Sealevel CCD","Hybrid CCD","CCD uncertainty","Boss & Wilkinson (1991)","Delaney & Boyle"]
