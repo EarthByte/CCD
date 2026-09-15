@@ -24,7 +24,8 @@ W = S.W_2COL
 HA = 4.4                     # cm, panel A frame
 H2 = 3.8                     # cm, panels B and C
 ROW_GAP = 1.30               # cm between panel A's age label and the row below
-LEG_ROW = 1.05               # cm above panel A for its legend
+LEG_ROW = 1.20               # cm above panel A for its legend, clear of the
+                             # event labels below it
 AGEMAX = 170
 
 D = pd.read_csv(S._HERE / "attribution_matched_series.csv")
@@ -81,7 +82,7 @@ for i, row in _cc.iterrows():
 checks += S.collisions(cat_boxes)
 if min(b.x0 for b in cat_boxes) < -BX + 0.05:
     checks.append("category labels run off the left edge of the figure")
-fig.text(x=-0.62, y=H2 + 0.12, text="B", justify="LB", font=f"{S.PT_TAG}p,{S.FONT}-Bold,black",
+fig.text(x=-0.62, y=H2 + 0.28, text="B", justify="LB", font=f"{S.PT_TAG}p,{S.FONT}-Bold,black",
          no_clip=True, **S.cm_frame(pB, top=0.9))
 fig.shift_origin(xshift=f"-{BX}c")
 
@@ -127,7 +128,7 @@ fig.text(x=1, y=r2_dg + 0.10, text="wrong sign", justify="CB",
 _lab_len = S.text_width_cm(CLABEL.replace("@+", ""), S.PT_LABEL)
 if _lab_len > H2:
     checks.append(f"(C) y-label is {_lab_len:.1f} cm long on a {H2:.1f} cm panel")
-fig.text(x=-0.55, y=H2 + 0.12, text="C", justify="LB", font=f"{S.PT_TAG}p,{S.FONT}-Bold,black",
+fig.text(x=-0.55, y=H2 + 0.28, text="C", justify="LB", font=f"{S.PT_TAG}p,{S.FONT}-Bold,black",
          no_clip=True, **S.cm_frame(pC, top=0.9))
 fig.shift_origin(xshift=f"-{CX}c")
 
@@ -138,7 +139,9 @@ pF = S.Panel(region=(0, AGEMAX, -60, 175), width=W, height=HA, x_reversed=True)
 RA, PA = list(pA.region), pA.projection
 fig.basemap(region=RA, projection=PA,
             frame=["WSn", "xa20f10+lAge (Ma)", "ya500f250+lCCD (m)"])
-_ev.draw_events_gmt(fig, pA, pt=S.PT_LEG)
+# 2.6 mm off the frame rather than 1.6: at this panel width the labels sat on the
+# topmost depth annotation.
+_ev.draw_events_gmt(fig, pA, pt=S.PT_LEG, dy=0.26)
 fig.plot(x=age, y=ccd, pen="1.4p,black", region=RA, projection=PA)
 
 RF = list(pF.region)
