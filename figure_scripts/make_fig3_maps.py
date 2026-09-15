@@ -89,7 +89,7 @@ GRIDS_ARE_RECONSTRUCTED = True
 # 190 mm column three of them plus the budget would run past the page; the figure is
 # sized to fit a page instead, 117 mm wide by about 225 mm tall.
 OUT_DPI = 300      # the fit measures at this dpi too, so the two cannot drift
-TIMES=[0,34,115]; LABELS=["a","b","c"]   # 34 Ma is the Eocene-Oligocene transition
+TIMES=[0,34,115]   # 34 Ma is the Eocene-Oligocene transition
 proj=ccrs.Mollweide(central_longitude=0)
 # The maps get the full column. Panel (d) starts from the same cell and is then fitted
 # to them further down, so that its axis labels finish flush with the map edges rather
@@ -102,7 +102,7 @@ axes=[fig.add_subplot(gs[i,0],projection=proj) for i in range(3)]
 axd=fig.add_subplot(gs[4,0])
 _spacer=fig.add_subplot(gs[3,0]); _spacer.axis("off")
 
-for ax,T,lab in zip(axes,TIMES,LABELS):
+for ax,T in zip(axes,TIMES):
     t0=time.time()
     ax.set_global(); ax.spines["geo"].set_linewidth(0.7)
     ax.set_facecolor("0.74")   # any cell with no grid data reads as continental crust, not white
@@ -222,7 +222,7 @@ print(f"  panel (d) fitted to the maps: {axd.get_position().width*_mm:.0f} mm fr
 # that panel at this x; nothing else is drawn out here, the event labels being inside
 # the panel's own x range.
 _LETTER_X = axes[0].get_position().x0
-for _a, _lab in zip(axes + [axd], "abcd"):
+for _a, _lab in zip(axes + [axd], "ABCD"):
     _va = "bottom" if _a is axd else "top"
     _y = _a.get_position().y1 + (0.4/(fig.get_size_inches()[1]*25.4) if _a is axd else 0.0)
     fig.text(_LETTER_X, _y, _lab, fontsize=13, fontweight="bold",

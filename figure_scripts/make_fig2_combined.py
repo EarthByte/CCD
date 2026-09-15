@@ -122,9 +122,9 @@ axb.legend(leg_h,leg_l,fontsize=7.6,frameon=False,ncol=2,loc="lower center",bbox
 
 def plab(a,t,x=-0.085,y=1.02):
     a.text(x,y,t,transform=a.transAxes,fontsize=14,fontweight="bold",va="bottom",ha="right")
-plab(ax,"a")
+plab(ax,"A")
 # panel-b label raised ~2 mm so it clears the topmost depth tick label
 _bh=axb.get_position().height*fig.get_size_inches()[1]*25.4   # panel height in mm
-plab(axb,"b",y=1.02+2.0/_bh)
+plab(axb,"B",y=1.02+2.0/_bh)
 for ext in ("png","pdf"): fig.savefig(OUT/f"Fig2_combined.{ext}",dpi=300,bbox_inches="tight")
 print("wrote Fig2_combined natively")
