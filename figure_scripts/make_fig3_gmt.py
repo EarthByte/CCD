@@ -125,6 +125,36 @@ def export_layers(refresh=False, only=None):
         print(f"  [fig3] exported {', '.join(n for n in LAYERS if n in wanted)} for {t} Ma")
 
 
+# ---- boundary geometry ------------------------------------------------------
+PEN_BOUNDARY = "0.45p,black"
+PEN_HALO = "1.4p,white"
+
+
+def _tolerance_km(mapw_cm: float, pen_pt: float = 0.45, share: float = 0.5) -> float:
+    """Resampling tolerance: half a line width on the page, expressed in km.
+
+    The model digitises the ridges and trenches at a quarter to half a degree, which on
+    a global map 8.9 cm wide is 0.06 to 0.12 mm - finer than the 0.45 pt line drawn
+    along it. GMT renders every one of those steps, so the line prints serrated;
+    matplotlib drew the same geometry at 300 dpi with a wider halo and antialiased them
+    away. Dropping detail below half a line width removes only what the page cannot
+    resolve, and the ridge reads as a ridge again.
+    """
+    km_per_mm = 40000.0 / (mapw_cm * 10.0)          # equator, whole globe across mapw
+    return share * pen_pt * 25.4 / 72.0 * km_per_mm
+
+
+def simplified(t, name, mapw):
+    """Cached copy of a boundary layer resampled to the page's resolution."""
+    src = layer(t, name)
+    out = CACHE / f"{name}_{t}Ma_simplified.gmt"
+    tol = _tolerance_km(mapw)
+    if not out.exists():
+        with pygmt.clib.Session() as lib:
+            lib.call_module("gmtsimplify", [str(src), f"-T{tol:.0f}k", f"->{out}"])
+    return out
+
+
 # ---- colour -----------------------------------------------------------------
 def continent_mask(t):
     """The mask grid holds 0 over ocean, and GMT paints a below-range value with the
@@ -181,14 +211,15 @@ def draw_map(fig, t, cpt, grey_cpt, mapw=None):
         fig.plot(data=str(layer(t, "coastlines")), pen="0.15p,gray40", projection=proj, region="d")
     # Halo first for all three boundary layers, then the lines, so a ridge does not lay
     # its halo over a transform that was drawn before it.
-    _bnd = [layer(t, n) for n in BOUNDARY_LAYERS if layer(t, n).stat().st_size > 20]
-    for pen in ("1.1p,white", "0.45p,black"):
+    _bnd = [simplified(t, n, mapw) for n in BOUNDARY_LAYERS
+            if layer(t, n).stat().st_size > 20]
+    for pen in (PEN_HALO, PEN_BOUNDARY):
         for f in _bnd:
             fig.plot(data=str(f), pen=pen, projection=proj, region="d")
     for side, flag in (("subduction_left", "+l"), ("subduction_right", "+r")):
         f = layer(t, side)
         if f.exists() and f.stat().st_size > 20:
-            fig.plot(data=str(f), pen="0.45p,black", fill="black",
+            fig.plot(data=str(f), pen=PEN_BOUNDARY, fill="black",
                      style=f"f0.30c/0.07c{flag}+t", projection=proj, region="d")
     fig.basemap(region="d", projection=proj, frame=["xg60", "yg30"])
     # Age label inside the top left of the map box, where the Mollweide outline leaves
@@ -265,6 +296,10 @@ def draw_colourbar(fig, cpt, standalone=False):
 def main():
     only = list(BOUNDARY_LAYERS) if "--refresh-boundaries" in sys.argv else None
     export_layers(refresh="--refresh" in sys.argv, only=only)
+    if only or "--refresh" in sys.argv:
+        for t in TIMES:
+            for n in BOUNDARY_LAYERS:
+                (CACHE / f"{n}_{t}Ma_simplified.gmt").unlink(missing_ok=True)
     missing = [f"{n}_{t}Ma" for t in TIMES for n in LAYERS if not layer(t, n).exists()]
     if missing:
         raise SystemExit("these reconstructed layers have not been exported: "
@@ -343,6 +378,8 @@ def main():
     small = S.too_small(S.PT_ANNOT, S.PT_LABEL, S.PT_LEG)
     print("  type below the 7 pt journal floor: " + (str(small) if small else "none"))
     print(f"  page {W:.2f} cm wide: maps {MAPW:.2f} x {MAPH:.2f} cm, budget {BUDW:.2f} x {BUDH:.2f} cm")
+    print(f"  boundaries resampled at {_tolerance_km(MAPW):.0f} km, half the width of the "
+          f"line drawn along them")
 
     for ext in ("png", "pdf"):
         fig.savefig(OUT / f"Fig3_carbonate_thickness_maps_gmt.{ext}", dpi=600, crop=True)
