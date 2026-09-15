@@ -25,6 +25,7 @@ import paper_gmt as S
 CW, OUT = S.CW, S.FIGDIR
 TIMES = [0, 34, 115]                     # 34 Ma is the Eocene-Oligocene transition
 CACHE = OUT / "_fig3_layers"
+PARTS = OUT / "Fig3_parts"               # maps as separate PNGs, for the .ai assembly
 STEP8 = CW / "steps/step8_carbonate_sediment_thickness/carbonate_sed_thickness_DM2026"
 STAGE = CW / "steps/step9_carbonate_volume_analysis/_cloud_stage"
 MODEL = CW / "steps/step9_carbonate_volume_analysis/input/Alfonso_etal_2024_modClennettMuller"
@@ -39,6 +40,7 @@ COLGAP = W - 2 * MAPW                    # 0.7 cm between the columns
 MAPH = MAPW / 2.0
 BUDW, BUDH = 7.00, 3.85                  # cm, panel (D) frame
 ROWGAP = 0.80                            # cm between the rows: enough for the part letter
+CB_BLOCK = 1.40                          # cm of page under the 115 Ma map, for the scale
 BOTTOM = 1.45                            # cm of clear page under the bottom row, which
                                          # carries the colour bar and panel (D)'s age axis
 CBAR_H = 0.30
@@ -63,9 +65,15 @@ def layer(t, name):
     return CACHE / f"{name}_{t}Ma.gmt"
 
 
-def export_layers(refresh=False):
-    """Reconstruct the vector layers once and write them as OGR_GMT files."""
-    need = [t for t in TIMES if refresh or not all(layer(t, n).exists() for n in LAYERS)]
+def export_layers(refresh=False, only=None):
+    """Reconstruct the vector layers once and write them as OGR_GMT files.
+
+    `only` re-exports just the named layers, for when one of them changes definition
+    and the rest are still good.
+    """
+    wanted = LAYERS if only is None else tuple(only)
+    need = [t for t in TIMES if refresh or only
+            or not all(layer(t, n).exists() for n in LAYERS)]
     if not need:
         return
     import gplately
@@ -83,11 +91,23 @@ def export_layers(refresh=False):
     for t in need:
         gp = gplately.PlotTopologies(model, coastlines=coast, continents=cont, time=t)
         left, right = gp.get_subduction_direction()
+        # The boundaries of the RESOLVED RIGID PLATES, which is what the earlier figure
+        # drew. Every topological section, the alternative, also returns the sections
+        # that build the deforming networks: at 115 Ma that is 469 ridge fragments of
+        # about six points each, and they cover the map in short lines.
+        if hasattr(gp, "get_topological_plate_boundaries"):
+            bnd = gp.get_topological_plate_boundaries()
+        else:
+            print("  warning: this gplately has no get_topological_plate_boundaries();"
+                  " falling back to every topological section")
+            bnd = gp.get_all_topological_sections()
         for name, gdf in (("coastlines", gp.get_coastlines()),
                           ("continents", gp.get_continents()),
-                          ("boundaries", gp.get_all_topological_sections()),
+                          ("boundaries", bnd),
                           ("subduction_left", left),
                           ("subduction_right", right)):
+            if name not in wanted:
+                continue
             path = layer(t, name)
             if gdf is None or len(gdf) == 0:
                 path.write_text("# empty\n")
@@ -170,8 +190,116 @@ def build_cpts():
     return cpt, grey
 
 
+def draw_map(fig, t, cpt, grey_cpt, mapw=None):
+    """One reconstructed thickness map at the current origin, without its part letter.
+
+    Used by the assembled figure and by the standalone panel export, so the two cannot
+    drift apart.
+    """
+    mapw = MAPW if mapw is None else mapw
+    proj = f"W{mapw}c"
+    fig.basemap(region="d", projection=proj, frame=["+g" + GREY])
+    fig.grdimage(grid=str(thickness_grid(t)), cmap=str(cpt), projection=proj,
+                 region="d", nan_transparent=True)
+    mask = continent_mask(t)
+    if mask is not None:
+        # The deforming networks are not covered by the rigid continental polygons;
+        # without the mask they render as holes in the continents.
+        fig.grdimage(grid=str(mask), cmap=str(grey_cpt), projection=proj, region="d",
+                     nan_transparent=True)
+    else:
+        print(f"  warning: no continental mask for {t} Ma")
+    if layer(t, "continents").exists():
+        fig.plot(data=str(layer(t, "continents")), fill=GREY, projection=proj, region="d")
+    if layer(t, "coastlines").exists():
+        fig.plot(data=str(layer(t, "coastlines")), pen="0.15p,gray40", projection=proj, region="d")
+    bnd = filtered_boundaries(t)
+    if bnd is not None:
+        for pen in ("1.1p,white", "0.45p,black"):
+            fig.plot(data=str(bnd), pen=pen, projection=proj, region="d")
+    for side, flag in (("subduction_left", "+l"), ("subduction_right", "+r")):
+        f = layer(t, side)
+        if f.exists() and f.stat().st_size > 20:
+            fig.plot(data=str(f), pen="0.45p,black", fill="black",
+                     style=f"f0.30c/0.07c{flag}+t", projection=proj, region="d")
+    fig.basemap(region="d", projection=proj, frame=["xg60", "yg30"])
+    # Age label inside the top left of the map box, where the Mollweide outline leaves
+    # the corner empty.
+    fig.text(x=-168, y=76, text=f"{t} Ma", justify="LT", font=f"{S.PT_LABEL}p,{S.FONT},black",
+             fill="white@30", clearance="0.04c/0.02c", projection=proj, region="d",
+             no_clip=True)
+
+
+def write_parts(cpt, grey_cpt):
+    """The three maps as separate 600 dpi PNGs, plus the colour bar as vector artwork.
+
+    Geology wants .ai files and the assembled figure does not survive the import, so the
+    maps - the part that is a raster image under several thousand line segments - are
+    written one per file at the size they occupy in the figure (8.90 x 4.45 cm), and the
+    colour bar, which is pure vector, is written separately to be placed over them. Part
+    letters are left off: they belong to the assembly, not to the map.
+    """
+    PARTS.mkdir(parents=True, exist_ok=True)
+    written = []
+    for letter, t in zip("ABC", TIMES):
+        f = pygmt.Figure()
+        pygmt.config(**S.defaults())
+        draw_map(f, t, cpt, grey_cpt)
+        out = PARTS / f"Fig3{letter}_{t}Ma_600dpi.png"
+        f.savefig(out, dpi=600, crop=True, anti_alias=True)
+        written.append(out)
+    f = pygmt.Figure()
+    pygmt.config(**S.defaults())
+    draw_colourbar(f, cpt, standalone=True)
+    for ext in ("pdf", "png"):
+        out = PARTS / f"Fig3_colourbar.{ext}"
+        f.savefig(out, dpi=600, crop=True)
+        written.append(out)
+    sizes = {}
+    for w in written:
+        if w.suffix == ".png":
+            from PIL import Image
+            with Image.open(w) as im:
+                sizes[w.name] = im.size
+    print("  parts for the Illustrator assembly, in " + str(PARTS.name) + ":")
+    for w in written:
+        extra = f"  {sizes[w.name][0]} x {sizes[w.name][1]} px" if w.name in sizes else ""
+        print(f"    {w.name}{extra}")
+    png = [v for k, v in sizes.items() if k.startswith("Fig3A") or k.startswith("Fig3B")
+           or k.startswith("Fig3C")]
+    if len(set(png)) > 1:
+        print("  WARNING: the three map PNGs are not the same pixel size")
+
+
+def draw_colourbar(fig, cpt, standalone=False):
+    """The shared scale bar with its label, at the current origin."""
+    if standalone:
+        # Nothing has been drawn yet in this figure, so the bar itself has to carry the
+        # region and projection that fix the page.
+        fig.colorbar(cmap=str(cpt), equalsize=0.0, region=[0, MAPW, 0, CB_BLOCK],
+                     projection=f"X{MAPW}c/{CB_BLOCK}c",
+                     position=f"x{MAPW / 2}c/{CB_BLOCK - 0.30}c+w{MAPW - 1.9}c/{CBAR_H}c+h+jTC")
+        fig.text(x=MAPW / 2, y=0.12, text="Compacted carbonate sediment thickness (m)",
+                 justify="CB", font=f"{S.PT_LABEL}p,{S.FONT},black", no_clip=True,
+                 region=[0, MAPW, 0, CB_BLOCK], projection=f"X{MAPW}c/{CB_BLOCK}c")
+        return
+    # Equal-width classes: the ten classes below 50 m are what the reader needs to tell
+    # apart, and on a bar proportional to thickness they take a sixth of its length.
+    # GMT's -L (equal classes) refuses a -B that sets increments, so the label is drawn
+    # underneath rather than riding on the bar's own axis.
+    fig.colorbar(cmap=str(cpt), equalsize=0.0,
+                 position=f"x{MAPW / 2}c/{CB_BLOCK - 0.30}c+w{MAPW - 1.9}c/{CBAR_H}c+h+jTC")
+    fig.text(x=MAPW / 2, y=0.12, text="Compacted carbonate sediment thickness (m)",
+             justify="CB", font=f"{S.PT_LABEL}p,{S.FONT},black", no_clip=True,
+             region=[0, MAPW, 0, CB_BLOCK], projection=f"X{MAPW}c/{CB_BLOCK}c")
+
+
 def main():
-    export_layers(refresh="--refresh" in sys.argv)
+    only = ["boundaries"] if "--refresh-boundaries" in sys.argv else None
+    export_layers(refresh="--refresh" in sys.argv, only=only)
+    if only:
+        for t in TIMES:
+            (CACHE / f"boundaries_plate_{t}Ma.gmt").unlink(missing_ok=True)
     cpt, grey_cpt = build_cpts()
     budget = pd.read_csv(OUT / "Fig3_carbonate_budget.csv")
 
@@ -187,36 +315,7 @@ def main():
     for letter, t in zip("ABC", TIMES):
         x0, y0 = cells[letter]
         fig.shift_origin(xshift=f"{x0}c", yshift=f"{y0}c")
-        proj = f"W{MAPW}c"
-        fig.basemap(region="d", projection=proj, frame=["+g" + GREY])
-        fig.grdimage(grid=str(thickness_grid(t)), cmap=str(cpt), projection=proj,
-                     region="d", nan_transparent=True)
-        mask = continent_mask(t)
-        if mask is not None:
-            # The deforming networks are not covered by the rigid continental polygons;
-            # without the mask they render as holes in the continents.
-            fig.grdimage(grid=str(mask), cmap=str(grey_cpt), projection=proj, region="d",
-                         nan_transparent=True)
-        else:
-            print(f"  warning: no continental mask for {t} Ma")
-        if layer(t, "continents").exists():
-            fig.plot(data=str(layer(t, "continents")), fill=GREY, projection=proj, region="d")
-        if layer(t, "coastlines").exists():
-            fig.plot(data=str(layer(t, "coastlines")), pen="0.15p,gray40", projection=proj, region="d")
-        bnd = filtered_boundaries(t)
-        if bnd is not None:
-            for pen in ("1.1p,white", "0.45p,black"):
-                fig.plot(data=str(bnd), pen=pen, projection=proj, region="d")
-        for side, flag in (("subduction_left", "+l"), ("subduction_right", "+r")):
-            f = layer(t, side)
-            if f.exists() and f.stat().st_size > 20:
-                fig.plot(data=str(f), pen="0.45p,black", fill="black",
-                         style=f"f0.45c/0.09c{flag}+t", projection=proj, region="d")
-        fig.basemap(region="d", projection=proj, frame=["xg60", "yg30"])
-        # Age label inside the top left of the map box, where the Mollweide outline
-        # leaves the corner empty.
-        fig.text(x=-168, y=76, text=f"{t} Ma", justify="LT", font=f"{S.PT_LABEL}p,{S.FONT},black",
-                 fill="white@30", clearance="0.04c/0.02c", projection=proj, region="d", no_clip=True)
+        draw_map(fig, t, cpt, grey_cpt)
         fig.text(x=0.0, y=MAPH + 0.12, text=letter, justify="LB",
                  font=f"{S.PT_TAG}p,{S.FONT}-Bold,black", no_clip=True,
                  region=[0, MAPW, 0, MAPH + 0.9], projection=f"X{MAPW}c/{MAPH + 0.9}c")
@@ -224,19 +323,8 @@ def main():
 
     # -------- shared colour bar, under the 115 Ma map ------------------------
     x0, y0 = cells["C"]
-    CB_BLOCK = 1.40                       # cm of page under the 115 Ma map
     fig.shift_origin(xshift=f"{x0}c", yshift=f"{y0 - CB_BLOCK}c")
-    # Equal-width classes: the ten classes below 50 m are what the reader needs to tell
-    # apart, and on a bar proportional to thickness they take a sixth of its length.
-    # Placed in paper coordinates below the map, with its own label drawn underneath -
-    # GMT's -L (equal classes) refuses a -B that sets increments, so the label cannot
-    # ride on the bar's own axis.
-    CBW = MAPW - 1.9
-    fig.colorbar(cmap=str(cpt), equalsize=0.0,
-                 position=f"x{MAPW / 2}c/{CB_BLOCK - 0.30}c+w{CBW}c/{CBAR_H}c+h+jTC")
-    fig.text(x=MAPW / 2, y=0.12, text="Compacted carbonate sediment thickness (m)",
-             justify="CB", font=f"{S.PT_LABEL}p,{S.FONT},black", no_clip=True,
-             region=[0, MAPW, 0, CB_BLOCK], projection=f"X{MAPW}c/{CB_BLOCK}c")
+    draw_colourbar(fig, cpt)
     fig.shift_origin(xshift=f"-{x0}c", yshift=f"-{y0 - CB_BLOCK}c")
 
     # -------- (D) the carbonate budget ---------------------------------------
@@ -289,6 +377,7 @@ def main():
     for ext in ("png", "pdf"):
         fig.savefig(OUT / f"Fig3_carbonate_thickness_maps_gmt.{ext}", dpi=600, crop=True)
     print("wrote Fig3_carbonate_thickness_maps_gmt")
+    write_parts(cpt, grey_cpt)
 
 
 if __name__ == "__main__":
