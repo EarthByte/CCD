@@ -32,3 +32,31 @@ def draw_events(ax, fontsize: float = 8.5, y: float = 1.005) -> None:
         ax.axvline(age, **LINE_KW)
         ax.text(age, y, label, transform=ax.get_xaxis_transform(),
                 fontsize=fontsize, **TEXT_KW)
+
+
+def draw_events_gmt(fig, panel, pt: float = 7.0, colour: str = "40",
+                    label_colour: str = "30", dy: float = 0.16):
+    """The same events on a pyGMT panel: dotted verticals inside the frame and
+    labels just above it. Returns the label boxes so the caller's collision
+    check can see them.
+
+    `panel` is a paper_gmt.Panel; `dy` lifts the labels off the frame, in cm.
+    """
+    import paper_gmt as S
+
+    region = list(panel.region)
+    boxes = []
+    for age, label in EVENTS:
+        if not (min(region[0], region[1]) <= age <= max(region[0], region[1])):
+            continue
+        fig.plot(x=[age, age], y=[region[2], region[3]], pen=f"0.5p,{colour},.",
+                 region=region, projection=panel.projection)
+        boxes.append(panel.label_box(f"event {label}", label, age, region[3], pt,
+                                     justify="CB", dy=dy))
+    cf = S.cm_frame(panel, top=max(b.y1 for b in boxes) - panel.height if boxes else 0.0)
+    for (age, label), box in zip([e for e in EVENTS
+                                  if min(region[0], region[1]) <= e[0] <= max(region[0], region[1])],
+                                 boxes):
+        fig.text(x=panel.x_cm(age), y=panel.height + dy, text=label, justify="CB",
+                 font=f"{pt}p,{S.FONT},{label_colour}", no_clip=True, **cf)
+    return boxes
