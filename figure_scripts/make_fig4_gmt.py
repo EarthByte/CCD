@@ -141,7 +141,7 @@ fig.basemap(region=RA, projection=PA,
             frame=["WSn", "xa20f10+lAge (Ma)", "ya500f250+lCCD (m)"])
 # 2.6 mm off the frame rather than 1.6: at this panel width the labels sat on the
 # topmost depth annotation.
-_ev.draw_events_gmt(fig, pA, pt=S.PT_LEG, dy=0.26)
+_event_boxes = _ev.draw_events_gmt(fig, pA, pt=S.PT_LEG, dy=0.26)
 fig.plot(x=age, y=ccd, pen="1.4p,black", region=RA, projection=PA)
 
 RF = list(pF.region)
@@ -166,11 +166,17 @@ ENTRIES_A = [("Global CCD (this study)", "black", "line", "1.4p"),
               "line", "0.7p,3_1.2_0.6_1.2:0")]
 # Above the panel: seven entries over a curve that fills the frame had nowhere to sit
 # inside it. The row clears the event labels, which sit just above the frame.
-legA = S.draw_legend(fig, pA, ENTRIES_A, x0=0.10, y0=HA + LEG_ROW + 0.45, ncol=2, col_gap=0.30)
+legA = S.draw_legend(fig, pA, ENTRIES_A, x0=0.10, y0=HA + LEG_ROW + 0.80, ncol=2, col_gap=0.30)
 if legA.x1 > W + 0.05:
     checks.append(f"legend A is {legA.x1 - legA.x0:.1f} cm wide on a {W:.1f} cm figure")
+# The legend's bottom row and the event labels share the strip above the panel, so the
+# clearance between them is measured rather than judged by eye.
+_gap = legA.y0 - max(b.y1 for b in _event_boxes)
+print(f"  legend A clears the event labels by {_gap * 10:.1f} mm")
+if _gap < 0.20:
+    checks.append(f"legend A sits {_gap * 10:.1f} mm above the event labels")
 
-fig.text(x=-0.62, y=HA + 0.12, text="A", justify="LB", font=f"{S.PT_TAG}p,{S.FONT}-Bold,black",
+fig.text(x=-0.62, y=HA + 0.28, text="A", justify="LB", font=f"{S.PT_TAG}p,{S.FONT}-Bold,black",
          no_clip=True, **S.cm_frame(pA, top=0.9))
 
 # ============================ checks and output ==============================

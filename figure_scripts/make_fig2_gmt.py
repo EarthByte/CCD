@@ -16,8 +16,12 @@ import paper_gmt as S
 
 CW, OUT = S.CW, S.FIGDIR
 W = S.W_2COL
-HA = HB = 4.6          # cm, frame height of each panel
-GAP = 1.55             # cm between the frames: A's age label and B's event labels
+# The panel proportions of the figure this replaces: 14.19 cm wide by 8.60 and 8.43 cm,
+# i.e. 1.65 and 1.68 wide to tall, with 2.00 cm between the frames. Scaled to the
+# two-column width, that is what the panels get here. The squarer panel is what makes
+# room for the calibration inset, which a 2.7:1 panel could not hold.
+HA, HB = 7.44, 7.29    # cm, frame height of each panel
+GAP = 1.73             # cm between the frames: A's age label and B's event labels
 AGEMAX = 170
 MHT = 66.6             # Miller/Haq transition
 
@@ -134,7 +138,11 @@ for name, d in (("short-term record", sl), ("Haq", haq), ("envelope", env)):
 checks += S.collisions([legA] + src_boxes)
 
 # ---- inset: the RMA calibration --------------------------------------------
-IX, IY, IW, IH = 4.40, 0.75, 4.20, 1.95          # cm within panel A
+# Centre-bottom, at the fractions of the panel the earlier figure used: x 0.352, y 0.125,
+# 0.35 of the width by 0.40 of the height, then raised 3 mm so its lowest annotation
+# clears the dashed zero-sea-level line.
+IX, IY = 0.352 * W, 0.125 * HA + 0.30
+IW, IH = 0.35 * W, 0.40 * HA - 0.20
 ins = S.Panel(region=(-25, 150, 3250, 4750), width=IW, height=IH,
               origin=(IX, IY), y_reversed=True)
 inset_box = S.Box("inset", IX - 0.95, IY - 0.75, IX + IW + 0.10, IY + IH + 0.10)
@@ -146,18 +154,24 @@ checks += S.collisions([inset_box, legA] + src_boxes)
 # The backing covers the inset's own annotations and axis labels as well as its frame,
 # so the sea-level curves do not run through the numbers.
 _cfa = S.cm_frame(pa)
+# No outline on the backing, and 25% transparent: the inset covers part of the
+# short-term record wherever it is put, and letting the record show faintly through is
+# better than hiding it. Its own annotations still read, being black on near-white.
+INSET_FILL = "white@25"
 fig.plot(x=[inset_box.x0, inset_box.x1, inset_box.x1, inset_box.x0],
          y=[inset_box.y0, inset_box.y0, inset_box.y1, inset_box.y1],
-         fill="white", pen="0.3p,gray60", close=True, **_cfa)
+         fill=INSET_FILL, close=True, **_cfa)
 
 fig.shift_origin(xshift=f"{IX}c", yshift=f"{IY}c")
 RI, PI = list(ins.region), ins.projection
 fig.plot(x=[RI[0], RI[1], RI[1], RI[0]], y=[RI[2], RI[2], RI[3], RI[3]],
-         fill="white", pen="0.4p,gray40", close=True, region=RI, projection=PI)
+         fill=INSET_FILL, pen="0.4p,gray40", close=True, region=RI, projection=PI)
 if band is not None:
     fig.plot(x=np.concatenate([band["Sea_level_m"], band["Sea_level_m"][::-1]]),
              y=np.concatenate([band["CCD_p2.5"], band["CCD_p97.5"][::-1]]),
-             fill="gray70", close=True, region=RI, projection=PI)
+             # 0.55 grey at 22% opacity, as before: light enough that the points and
+             # the fit read over it.
+             fill="gray55@78", close=True, region=RI, projection=PI)
 fig.plot(x=mt["Sea_level_m"], y=mt["CCD_m_pos_down"], style="c0.09c", pen="0.4p,black",
          region=RI, projection=PI)
 _xx = np.linspace(mt["Sea_level_m"].min(), mt["Sea_level_m"].max(), 100)
