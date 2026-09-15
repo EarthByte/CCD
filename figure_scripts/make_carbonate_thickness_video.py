@@ -3,7 +3,7 @@
 Supplementary Movie S? -- compacted carbonate sediment thickness, 0-170 Ma.
 
 Mollweide projection, coloured with the SAME palette as Figure 3
-(data/carbonate_thickness_blue_orange_red_pale.cpt), with GPlately-reconstructed
+(data/carbonate_thickness_roma_pale.cpt), with GPlately-reconstructed
 plate boundaries (black + white halo), subduction teeth, gray continental
 polygons + thin coastlines. The carbonate-thickness grids are already in
 Alfonso et al. (2025) palaeo-coordinates at each Ma, so they are plotted
@@ -40,7 +40,7 @@ CW = _workflow_root()
 FIGDIR = _HERE / "Figures" if (_HERE / "Figures").is_dir() else CW / "figures"
 FIGDIR.mkdir(parents=True, exist_ok=True)
 MODEL_DIR = CW / "steps/step9_carbonate_volume_analysis/input/Alfonso_etal_2024_modClennettMuller"
-CPT       = CW / "data/carbonate_thickness_blue_orange_red_pale.cpt"
+CPT       = CW / "data/carbonate_thickness_roma_pale.cpt"
 GRID_DIR  = CW / "steps/step8_carbonate_sediment_thickness/carbonate_sed_thickness_DM2026"
 GRID_FMT  = str(GRID_DIR / "compacted_sediment_thickness_0.25_{t}.nc")
 OUT       = FIGDIR / "videos"; OUT.mkdir(parents=True, exist_ok=True)
@@ -58,8 +58,11 @@ def main():
     V.render_video(times, GRID_FMT, str(OUT), "carbonate_thickness",
                    "Compacted carbonate sediment thickness (m)", str(MODEL_DIR),
                    cmap, norm=norm,
-                   cbar_ticks=[0,10,20,30,40,50,100,160,210,270,320],
-                   cbar_extend="max", framerate=a.framerate, force=a.force)
+                   # Every class the same width, and every boundary labelled, as in
+                   # Figure 3: the ten classes below 50 m are the ones to tell apart.
+                   cbar_ticks=[0,5,10,15,20,25,30,35,40,45,50,100,160,210,270],
+                   cbar_extend="max", cbar_spacing="uniform",
+                   framerate=a.framerate, force=a.force)
 
 if __name__ == "__main__":
     main()

@@ -90,6 +90,7 @@ def _grid_south_up(path):
     return z
 
 def _render_signature(cmap, norm, vmin, vmax, cbar_label, cbar_ticks, cbar_extend,
+                      cbar_spacing,
                       figsize, dpi, central_lon):
     """Fingerprint of everything that changes how a frame looks.
 
@@ -112,10 +113,16 @@ def _render_signature(cmap, norm, vmin, vmax, cbar_label, cbar_ticks, cbar_exten
         "bounds": [float(b) for b in norm.boundaries] if norm is not None else None,
         "vmin": vmin, "vmax": vmax, "cbar_label": cbar_label,
         "cbar_ticks": None if cbar_ticks is None else [float(t) for t in cbar_ticks],
-        "cbar_extend": cbar_extend, "figsize": list(figsize), "dpi": dpi,
+        "cbar_extend": cbar_extend,
+        "figsize": list(figsize), "dpi": dpi,
         "central_lon": central_lon, "cbar_gap_mm": CBAR_GAP_MM, "cbar_h": _CBAR_H,
         "continent_gray": CONTINENT_GRAY,
     }
+    if cbar_spacing != "proportional":
+        # Only a non-default spacing enters the fingerprint, so the videos that never
+        # asked for one keep the signature their cached frames were drawn under and are
+        # not re-rendered for a setting that did not change for them.
+        parts["cbar_spacing"] = cbar_spacing
     blob = json.dumps(parts, sort_keys=True).encode()
     return hashlib.sha256(blob).hexdigest()
 
@@ -123,7 +130,8 @@ def _render_signature(cmap, norm, vmin, vmax, cbar_label, cbar_ticks, cbar_exten
 def render_video(times, grid_fmt, out_dir, out_prefix, cbar_label,
                  MODEL_DIR, cmap, norm=None, vmin=None, vmax=None,
                  central_lon=15.0, framerate=8, dpi=150,
-                 cbar_ticks=None, cbar_extend="max", figsize=(10.0, 5.8),
+                 cbar_ticks=None, cbar_extend="max", cbar_spacing="proportional",
+                 figsize=(10.0, 5.8),
                  force=False):
     rotm, model, coast, cont, static = build_model(MODEL_DIR)
     frame_dir = os.path.join(out_dir, f"frames_{out_prefix}")
@@ -133,7 +141,7 @@ def render_video(times, grid_fmt, out_dir, out_prefix, cbar_label,
     if norm is None: sm.set_clim(vmin, vmax)
 
     sig = _render_signature(cmap, norm, vmin, vmax, cbar_label, cbar_ticks,
-                            cbar_extend, figsize, dpi, central_lon)
+                            cbar_extend, cbar_spacing, figsize, dpi, central_lon)
     sig_path = os.path.join(frame_dir, ".render_signature")
     prev = None
     if os.path.exists(sig_path):
@@ -186,8 +194,11 @@ def render_video(times, grid_fmt, out_dir, out_prefix, cbar_label,
                 fontweight="bold", va="top", ha="left", zorder=10,
                 bbox=dict(boxstyle="square,pad=0.3", fc="white", ec="black", lw=1.0))
         cax = fig.add_axes([0.25, _map_b - CBAR_GAP_MM/_fig_mm - _CBAR_H, 0.5, _CBAR_H])
+        # "uniform" draws every class of a stepped palette at the same width, which is
+        # how the same scale is drawn in Figure 3: the classes below 50 m are 5 m wide
+        # and share a sixth of a bar laid out in proportion to thickness.
         cb = fig.colorbar(sm, cax=cax, orientation="horizontal", extend=cbar_extend,
-                          spacing="proportional")
+                          spacing=cbar_spacing)
         cb.set_label(cbar_label, fontsize=11)
         if cbar_ticks is not None: cb.set_ticks(cbar_ticks)
         cb.ax.tick_params(labelsize=9)
