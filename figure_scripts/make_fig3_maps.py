@@ -36,7 +36,7 @@ def _thickness_grid(T):
         return snap
     raise SystemExit(f"no carbonate-thickness grid for {T} Ma (looked in {STEP8} and {STAGE})")
 MODEL = STEP9/"input/Alfonso_etal_2024_modClennettMuller"
-CPT   = CW/"data/carbonate_thickness_blue_orange_red_pale.cpt"
+CPT   = CW/"data/carbonate_thickness_roma_pale.cpt"
 CMASK = CW/"steps/step10_carbon_cycle_degassing/Alfonso_etal_2024_DM26/Grids/InputGrids/ContinentalMasks"
 OUT   = FIGDIR
 for _p in (MODEL, CPT):
@@ -46,6 +46,16 @@ if not (STEP8.is_dir() or STAGE.is_dir()):
 OUT.mkdir(exist_ok=True)
 import matplotlib; matplotlib.use("Agg")
 import matplotlib.pyplot as plt
+# Geology asks for Helvetica or Arial and for lettering of 7-12 pt, with part labels of
+# 13-16 pt, at the size the figure is printed. This figure is built at the journal's
+# full page width, so the sizes below are the sizes the reader sees.
+matplotlib.rcParams["font.family"] = "sans-serif"
+matplotlib.rcParams["font.sans-serif"] = ["Helvetica", "Arial", "Nimbus Sans",
+                                          "Liberation Sans", "DejaVu Sans"]
+matplotlib.rcParams["pdf.fonttype"] = 42      # embed as TrueType, not as outlines
+matplotlib.rcParams["axes.unicode_minus"] = False
+PT_LABEL, PT_TICK, PT_EVENT, PT_AGE, PT_LETTER = 8.0, 7.0, 7.0, 8.0, 13.0
+W_PAGE_MM = 185.0                             # Geology, full page
 from matplotlib.colors import ListedColormap, BoundaryNorm
 from matplotlib.cm import ScalarMappable
 import cartopy.crs as ccrs
@@ -84,23 +94,38 @@ model = gplately.PlateReconstruction(rotm, topology_features=topo, static_polygo
 # grids that are still in present-day coordinates.
 GRIDS_ARE_RECONSTRUCTED = True
 
-# Three maps stacked vertically, with the carbonate budget below them at the same
-# width. A Mollweide map is twice as wide as it is tall, so at the journal's full
-# 190 mm column three of them plus the budget would run past the page; the figure is
-# sized to fit a page instead, 117 mm wide by about 225 mm tall.
-OUT_DPI = 300      # the fit measures at this dpi too, so the two cannot drift
+# Two by two: three Mollweide maps and the carbonate budget. A Mollweide map is twice
+# as wide as it is tall, so one column of three plus the budget ran 225 mm down the
+# page; side by side they fit the page width with room for the budget in the fourth
+# cell. Axes are placed in figure fractions computed from millimetres, so the panel
+# sizes are the printed ones rather than whatever a gridspec leaves over.
+OUT_DPI = 600      # the raster the journal wants for the assembled artwork
 TIMES=[0,34,115]   # 34 Ma is the Eocene-Oligocene transition
 proj=ccrs.Mollweide(central_longitude=0)
-# The maps get the full column. Panel (d) starts from the same cell and is then fitted
-# to them further down, so that its axis labels finish flush with the map edges rather
-# than overhanging. Row 4 is an empty spacer that the shared colour bar sits in, so it
-# cannot land on top of the last map.
-fig=plt.figure(figsize=(5.4,8.85))
-gs=fig.add_gridspec(5,1,height_ratios=[1.0,1.0,1.0,0.34,0.72],
-                    left=0.165,right=0.855,top=0.995,bottom=0.070,hspace=0.05)
-axes=[fig.add_subplot(gs[i,0],projection=proj) for i in range(3)]
-axd=fig.add_subplot(gs[4,0])
-_spacer=fig.add_subplot(gs[3,0]); _spacer.axis("off")
+
+MAP_W, COL_GAP, LEFT_PAD = 89.0, 5.5, 1.5     # mm
+MAP_H = MAP_W/2.0
+ROW_GAP = 5.0
+CB_BLOCK = 13.0                               # mm under the 115 Ma map for the scale
+# The budget panel carries a two-line axis label and its tick labels on BOTH sides,
+# about 13.5 mm each, so its frame is that much narrower than the map beside it.
+BUD_W, BUD_H = 58.0, 35.0                     # mm, panel (D) frame
+BUD_LEFT, BUD_BOTTOM = 15.5, 9.5              # mm of its cell taken by labels
+FIG_W = LEFT_PAD + 2*MAP_W + COL_GAP
+FIG_H = CB_BLOCK + MAP_H + ROW_GAP + MAP_H + 6.0   # the last term is the part letters' row
+fig=plt.figure(figsize=(FIG_W/25.4, FIG_H/25.4))
+
+def _cell(x_mm, y_mm, w_mm, h_mm):
+    """Axes rectangle in figure fractions, from millimetres on the page."""
+    return [x_mm/FIG_W, y_mm/FIG_H, w_mm/FIG_W, h_mm/FIG_H]
+
+_row_top = CB_BLOCK + MAP_H + ROW_GAP
+_col2 = LEFT_PAD + MAP_W + COL_GAP
+_cells = {"A": (LEFT_PAD, _row_top), "B": (_col2, _row_top),
+          "C": (LEFT_PAD, CB_BLOCK), "D": (_col2, CB_BLOCK)}
+axes=[fig.add_axes(_cell(*_cells[l], MAP_W, MAP_H), projection=proj)
+      for l in "ABC"]
+axd=fig.add_axes(_cell(_cells["D"][0]+BUD_LEFT, _cells["D"][1]+BUD_BOTTOM, BUD_W, BUD_H))
 
 for ax,T in zip(axes,TIMES):
     t0=time.time()
@@ -142,23 +167,22 @@ for ax,T in zip(axes,TIMES):
                 va="center", ha="left", zorder=10,
                 path_effects=[_pe.withStroke(linewidth=1.8, foreground="white")])
     # Panel letters are placed later, in figure coordinates, so that all four line up.
-    # age label sits clear of the Mollweide outline: 5.5 mm left of where it started,
-    # and close to the top of the panel box
-    _panel_mm = ax.get_position().width*fig.get_size_inches()[0]*25.4
-    ax.text(0.145-5.5/_panel_mm, 0.985, f"{T} Ma", transform=ax.transAxes, fontsize=10,
-            va="top", ha="left", zorder=10)
+    # age label in the top left of the map box, where the Mollweide outline leaves the
+    # corner empty
+    ax.text(0.085, 0.975, f"{T} Ma", transform=ax.transAxes, fontsize=PT_AGE,
+            va="top", ha="left", zorder=10,
+            path_effects=[_pe.withStroke(linewidth=2.0, foreground="white")])
     print(f"{T} Ma done {round(time.time()-t0,1)}s")
 
-# shared colorbar for the three maps, inside the spacer row
-_sp=_spacer.get_position()
-# High in the spacer row: its lower part holds panel (d) event labels.
-cax=fig.add_axes([_sp.x0+0.17*_sp.width, _sp.y0+0.80*_sp.height, 0.66*_sp.width, 0.009])
+# Shared colour bar, in the band under the 115 Ma map. Uniform spacing draws every
+# class at the same width: the ten classes below 50 m are the ones a reader has to tell
+# apart, and on a bar proportional to thickness they share a sixth of its length. The
+# boundaries are all labelled, so the scale stays readable as a non-linear one.
+cax=fig.add_axes(_cell(LEFT_PAD+9.0, CB_BLOCK-5.0, MAP_W-18.0, 3.0))
 sm=ScalarMappable(cmap=cmap,norm=norm)
-cb=fig.colorbar(sm, cax=cax, orientation="horizontal", extend="max", spacing="proportional")
-cb.set_label("Compacted carbonate sediment thickness (m)", fontsize=7.5, labelpad=2)
-# The 0-50 m bands are narrow on a proportional bar, so labelling every one of them
-# ran the numbers together; label every second.
-cb.set_ticks([0,20,40,100,160,210,270,320]); cb.ax.tick_params(labelsize=6.5, pad=1.5)
+cb=fig.colorbar(sm, cax=cax, orientation="horizontal", extend="max", spacing="uniform")
+cb.set_label("Compacted carbonate sediment thickness (m)", fontsize=PT_LABEL, labelpad=2)
+cb.set_ticks(bounds[:-1]); cb.ax.tick_params(labelsize=PT_TICK, pad=1.5)
 
 # (d) the carbonate budget, drawn by carbonate_budget.py so the panel and the data
 # file cannot drift apart
@@ -166,70 +190,29 @@ import importlib.util as _ilu
 _spec=_ilu.spec_from_file_location("carbonate_budget", _HERE/"carbonate_budget.py")
 _cb=_ilu.module_from_spec(_spec); _spec.loader.exec_module(_cb)
 _series=_cb.budget_series()
-_bx=_cb.draw_budget(axd, _series, label_size=7.5, tick_size=6.5)
+_bx=_cb.draw_budget(axd, _series, label_size=PT_LABEL, tick_size=PT_TICK,
+                    event_size=PT_EVENT)
 _cb.write_csv(_series)
 
-# The maps are ellipses that reach the edge of their axes box; panel (d) is a
-# rectangle carrying a two-line y-label on each side. Given the same box, those
-# labels overhang the maps by about 13 mm a side and the panel reads as wider than
-# them. Shrink its box until its own drawn ink - tick labels and axis labels
-# included - spans exactly what the maps span. Font sizes are in points and are not
-# touched by this, so nothing gets smaller to read.
-def _ink_span(_axs, _pad=2):
-    """Left and right edge of these axes' drawn ink, as fractions of figure width.
-
-    Measured off the rendered canvas, not from get_tightbbox: that pads around glyph
-    boxes, which left the panel a few per cent wider than the maps. The canvas is
-    rendered at the dpi the figure is saved at, because glyph advances are hinted to
-    whole pixels - measured at the default 100 dpi, the two-line y-label came out
-    narrower than it renders at 300 and the panel was fitted too far left.
-    """
-    _old_dpi = fig.get_dpi()
-    fig.set_dpi(OUT_DPI)
-    try:
-        fig.canvas.draw()
-        _buf = np.asarray(fig.canvas.buffer_rgba())[..., :3].mean(axis=2)
-        _H, _W = _buf.shape
-        _r = fig.canvas.get_renderer()
-        _bb = [a.get_tightbbox(_r) for a in _axs]
-        _y0 = max(0, int(_H - max(b.y1 for b in _bb)) - _pad)
-        _y1 = min(_H, int(_H - min(b.y0 for b in _bb)) + _pad)
-        _cols = np.where((_buf[_y0:_y1, :] < 245).any(axis=0))[0]
-        return _cols.min()/_W, (_cols.max()+1)/_W
-    finally:
-        fig.set_dpi(_old_dpi)
-
-_t0, _t1 = _ink_span(axes[:1])
-for _ in range(5):
-    _d0, _d1 = _ink_span([axd, _bx])
-    if abs(_d0-_t0) < 3e-4 and abs(_d1-_t1) < 3e-4:
-        break
-    _p = axd.get_position()
-    _nx0 = _p.x0 + (_t0-_d0); _nx1 = _p.x1 - (_d1-_t1)
-    for _a in (axd, _bx):
-        _a.set_position([_nx0, _p.y0, _nx1-_nx0, _p.height])
-_mm = fig.get_size_inches()[0]*25.4
-_d0, _d1 = _ink_span([axd, _bx])
-print(f"  panel (d) fitted to the maps: {axd.get_position().width*_mm:.0f} mm frame, "
-      f"ink {(_d1-_d0)*_mm:.1f} mm against the maps' {(_t1-_t0)*_mm:.1f} mm")
-
-# Panel letters in FIGURE coordinates at one x, so that all four line up: axes
-# coordinates will not do it, because the aspect-constrained maps and the fitted budget
-# panel have drawn boxes of different widths. The column sits on the left edge of the
-# drawn content, so the letters add no width to the figure. (a) to (c) go inside the top
-# left of their map box, where the Mollweide outline is far to the right. (d) goes above
-# panel (d) rather than inside it, because its two-line y-label runs the full height of
-# that panel at this x; nothing else is drawn out here, the event labels being inside
-# the panel's own x range.
-_LETTER_X = axes[0].get_position().x0
-for _a, _lab in zip(axes + [axd], "ABCD"):
-    _va = "bottom" if _a is axd else "top"
-    _y = _a.get_position().y1 + (0.4/(fig.get_size_inches()[1]*25.4) if _a is axd else 0.0)
-    fig.text(_LETTER_X, _y, _lab, fontsize=13, fontweight="bold",
-             va=_va, ha="left", zorder=10)
+# Part letters at the top left of each cell, in figure fractions: the maps and the
+# budget panel have different drawn widths, so axes coordinates would not line them up.
+for _l in "ABCD":
+    _x, _y = _cells[_l]
+    fig.text(_x/FIG_W, (_y+MAP_H)/FIG_H + 0.004, _l, fontsize=PT_LETTER,
+             fontweight="bold", va="bottom", ha="left", zorder=10)
 print(f"  budget panel: r = {_series['r']:.2f} between net gain and area above the CCD")
 _bad=_cb.text_collisions(fig,[(axd,True),(_bx,False),(cax,False)])
 print("  text collisions (panel d): "+(", ".join(_bad) if _bad else "none"))
 
-for ext in ("png","pdf"): fig.savefig(OUT/f"Fig3_carbonate_thickness_maps.{ext}", dpi=OUT_DPI)
+for ext in ("png","pdf"):
+    # No tight bounding box: the canvas IS the printed page, 185 mm wide, so the type
+    # sizes above survive placement unscaled. A tight box trims to the ink and the
+    # journal then scales whatever it gets.
+    fig.savefig(OUT/f"Fig3_carbonate_thickness_maps.{ext}", dpi=OUT_DPI)
+_right_edge = _cells["D"][0] + BUD_LEFT + BUD_W
+if _right_edge + 15.0 > FIG_W + 0.5:
+    print(f"  WARNING: panel (D) leaves {FIG_W-_right_edge:.1f} mm for its right-hand "
+          f"label and tick labels, which need about 15 mm")
+print(f"  page {FIG_W:.0f} x {FIG_H:.0f} mm: maps {MAP_W:.0f} x {MAP_H:.0f} mm, "
+      f"budget {BUD_W:.0f} x {BUD_H:.0f} mm; type 7-13 pt at printed size")
 print("saved Fig3 ->", OUT/"Fig3_carbonate_thickness_maps.png")

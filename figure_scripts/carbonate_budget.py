@@ -226,12 +226,13 @@ def write_csv(s: dict) -> Path:
     return out_csv
 
 
-def text_collisions(fig, pairs) -> list:
+def text_collisions(fig, pairs, pad_pt: float = 1.5) -> list:
     """Overlapping drawn text. `pairs` is a list of (axes, is_primary): x ticks are read
     only from the primary of a twinned pair, and ticks outside the view are skipped,
     since matplotlib keeps those and they would register as phantom overlaps."""
     fig.canvas.draw()
     rr = fig.canvas.get_renderer()
+    pad = pad_pt / 72.0 * fig.dpi      # two labels that merely touch are a collision
 
     def live(axis, lim):
         lo, hi = min(lim), max(lim)
@@ -253,7 +254,7 @@ def text_collisions(fig, pairs) -> list:
     bad = []
     for i in range(len(items)):
         for j in range(i + 1, len(items)):
-            a_, b_ = items[i][1], items[j][1]
+            a_, b_ = items[i][1].expanded(1, 1).padded(pad), items[j][1].expanded(1, 1).padded(pad)
             if (a_.overlaps(b_) and min(a_.x1, b_.x1) - max(a_.x0, b_.x0) > 1.0
                     and min(a_.y1, b_.y1) - max(a_.y0, b_.y0) > 1.0):
                 bad.append(f"{items[i][0].get_text()!r} / {items[j][0].get_text()!r}")

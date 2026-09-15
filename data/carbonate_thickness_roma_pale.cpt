@@ -1,0 +1,25 @@
+# Compacted carbonate sediment thickness (m).
+# Scientific colour map roma (Crameri), reversed so that thin sediment is blue and
+# thick sediment brown, sampled one colour per class rather than by z: the classes
+# below 50 m are 5 m wide and would otherwise share a single shade. Washed out with
+# the recipe of the blue-orange-red pale variant it replaces - CIE LCh chroma x 0.45,
+# lightness L -> 55 + 0.42 L - so the plate boundaries and coastlines drawn over it
+# still read. NaN = 189/189/189, the continent grey. Generated 2026-09-15.
+0	161/161/210	5	161/161/210
+5	163/176/214	10	163/176/214
+10	166/189/219	15	166/189/219
+15	170/202/223	20	170/202/223
+20	177/214/227	25	177/214/227
+25	189/227/230	30	189/227/230
+30	205/236/228	35	205/236/228
+35	220/238/220	40	220/238/220
+40	228/234/203	45	228/234/203
+45	229/222/182	50	229/222/182
+50	225/207/164	100	225/207/164
+100	220/193/155	160	220/193/155
+160	217/181/148	210	217/181/148
+210	212/169/142	270	212/169/142
+270	207/155/134	320	207/155/134
+B	161/161/210
+F	207/155/134
+N	189/189/189

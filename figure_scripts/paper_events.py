@@ -26,12 +26,36 @@ LINE_KW = dict(color="0.45", ls=":", lw=1.0, zorder=2)
 TEXT_KW = dict(color="0.30", ha="center", va="bottom", zorder=6)
 
 
-def draw_events(ax, fontsize: float = 8.5, y: float = 1.005) -> None:
-    """Dotted verticals with labels just above the axes."""
+def draw_events(ax, fontsize: float = 8.5, y: float = 1.005, pad_pt: float = 2.0) -> None:
+    """Dotted verticals with labels just above the axes.
+
+    A label that would touch its neighbour is lifted onto a second line instead. On a
+    narrow panel EOT and MMCO are 18.7 Myr apart, which is about 6 mm, while the two
+    strings need nearly 12 - they used to run together into EOTMMCO, and a check that
+    only fires on real overlap called that clear.
+    """
+    fig = ax.figure
+    drawn = []
     for age, label in EVENTS:
         ax.axvline(age, **LINE_KW)
-        ax.text(age, y, label, transform=ax.get_xaxis_transform(),
-                fontsize=fontsize, **TEXT_KW)
+        drawn.append((age, ax.text(age, y, label, transform=ax.get_xaxis_transform(),
+                                   fontsize=fontsize, **TEXT_KW)))
+    fig.canvas.draw()
+    rr = fig.canvas.get_renderer()
+    ax_h_in = ax.get_window_extent(renderer=rr).height / fig.dpi
+    # 1.6 line heights, not 1.0: a lift of exactly one line leaves the two rows
+    # separated by a fraction of a point, which reads as one crowded block.
+    line = fontsize * 1.60 / 72.0 / ax_h_in        # in axes fractions
+    pad_px = pad_pt / 72.0 * fig.dpi
+    rows = [None, None]                            # right edge of the last label per row
+    for age, t in sorted(drawn, key=lambda p: -p[0]):
+        e = t.get_window_extent(renderer=rr)
+        row = 0 if rows[0] is None or e.x0 - pad_px > rows[0] else 1
+        if row:
+            t.set_y(y + line)
+            fig.canvas.draw()
+            e = t.get_window_extent(renderer=rr)
+        rows[row] = e.x1
 
 
 def draw_events_gmt(fig, panel, pt: float = 7.0, colour: str = "40",
