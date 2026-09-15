@@ -8,10 +8,12 @@ The colour scale is inverted roma stepped one colour per class, on the class
 boundaries the thickness scale has always used, so the ten thin classes below
 50 m keep their contrast instead of being squeezed into one end of a ramp.
 
-The reconstructed vector layers - coastlines, continents, plate boundaries and
-subduction polarity - are exported once to Figures/_fig3_layers/ and re-read on
-later runs, so redrawing the figure does not re-run the plate reconstruction.
-Pass --refresh to rebuild them.
+The maps carry mid-ocean ridges, transforms and subduction zones and nothing else:
+the layers are exported from gplately's own typed getters, so the sections that
+build the deforming regions never enter the figure. They are written once to
+Figures/_fig3_layers/ and re-read on later runs, so redrawing the figure does not
+re-run the plate reconstruction. Pass --refresh to rebuild them all, or
+--refresh-boundaries for just the three boundary layers.
 """
 import sys
 from pathlib import Path
@@ -58,7 +60,14 @@ def thickness_grid(t):
 
 
 # ---- reconstructed vector layers -------------------------------------------
-LAYERS = ("coastlines", "continents", "boundaries", "subduction_left", "subduction_right")
+# The three boundary types the figure shows, each exported as its own line layer.
+# gplately draws them from the features labelled gpml:MidOceanRidge, gpml:Transform and
+# the trench lines; everything else the model carries - the sections that build the
+# deforming networks, the crust-type and terrane lines - lands in get_misc_boundaries()
+# and is not exported at all.
+BOUNDARY_LAYERS = ("ridges", "transforms", "trenches")
+LAYERS = (("coastlines", "continents") + BOUNDARY_LAYERS
+          + ("subduction_left", "subduction_right"))
 
 
 def layer(t, name):
@@ -88,23 +97,14 @@ def export_layers(refresh=False, only=None):
     model = gplately.PlateReconstruction(pygplates.RotationModel(rot), topology_features=topo,
                                          static_polygons=static, anchor_plate_id=0)
     CACHE.mkdir(parents=True, exist_ok=True)
-    def boundaries_of(gp):
-        # The boundaries of the RESOLVED RIGID PLATES, which is what the earlier figure
-        # drew. Every topological section, the alternative, also returns the sections
-        # that build the deforming networks: at 115 Ma that is 469 ridge fragments of
-        # about six points each, and they cover the map in short lines.
-        if hasattr(gp, "get_topological_plate_boundaries"):
-            return gp.get_topological_plate_boundaries()
-        print("  warning: this gplately has no get_topological_plate_boundaries();"
-              " falling back to every topological section")
-        return gp.get_all_topological_sections()
-
     # Each layer is fetched only if it is being written: reconstructing the coastlines
     # takes far longer than the boundaries, and re-exporting one layer should not pay
     # for the rest.
     SOURCES = {"coastlines": lambda gp: gp.get_coastlines(),
                "continents": lambda gp: gp.get_continents(),
-               "boundaries": boundaries_of,
+               "ridges": lambda gp: gp.get_ridges(),
+               "transforms": lambda gp: gp.get_transforms(),
+               "trenches": lambda gp: gp.get_trenches(),
                "subduction_left": lambda gp: gp.get_subduction_direction()[0],
                "subduction_right": lambda gp: gp.get_subduction_direction()[1]}
 
@@ -123,49 +123,6 @@ def export_layers(refresh=False, only=None):
                 continue
             gdf.to_file(path, driver="OGR_GMT")
         print(f"  [fig3] exported {', '.join(n for n in LAYERS if n in wanted)} for {t} Ma")
-
-
-# Only the boundaries that are plate boundaries in the ordinary sense. The exported
-# file also holds the edges of the deforming networks and the various crust-type and
-# terrane lines the model carries (unclassified, extended continental crust, slab edges,
-# inferred palaeo-boundaries), which crowd the maps without saying anything about
-# carbonate. Subduction zones stay in so a trench still draws where the polarity layers
-# have no segment for it; where they do, the teeth are drawn on top of the same line.
-BOUNDARY_TYPES = ("gpml:MidOceanRidge", "gpml:Transform", "gpml:SubductionZone")
-
-
-def filtered_boundaries(t):
-    """Copy of the boundary file holding only BOUNDARY_TYPES, written beside it.
-
-    The OGR_GMT export carries feature_type in each segment header, so the selection is
-    made here rather than by re-running the reconstruction.
-    """
-    src = layer(t, "boundaries")
-    if not src.exists():
-        return None
-    out = CACHE / f"boundaries_plate_{t}Ma.gmt"
-    lines = src.read_text(errors="replace").splitlines()
-    kept, keep, head = [], False, []
-    for line in lines:
-        if line.startswith("#") and not line.startswith("# @D"):
-            if not kept and not head:
-                head.append(line)
-            elif line == "# FEATURE_DATA":
-                head.append(line)
-            continue
-        if line.startswith(">"):
-            keep = False
-            pending = [line]
-            continue
-        if line.startswith("# @D"):
-            keep = any(f"|{ft}|" in line for ft in BOUNDARY_TYPES)
-            if keep:
-                kept.extend(pending + [line])
-            continue
-        if keep:
-            kept.append(line)
-    out.write_text("\n".join(["# @VGMT1.0", "# @GLINESTRING", "# FEATURE_DATA"] + kept) + "\n")
-    return out
 
 
 # ---- colour -----------------------------------------------------------------
@@ -222,10 +179,12 @@ def draw_map(fig, t, cpt, grey_cpt, mapw=None):
         fig.plot(data=str(layer(t, "continents")), fill=GREY, projection=proj, region="d")
     if layer(t, "coastlines").exists():
         fig.plot(data=str(layer(t, "coastlines")), pen="0.15p,gray40", projection=proj, region="d")
-    bnd = filtered_boundaries(t)
-    if bnd is not None:
-        for pen in ("1.1p,white", "0.45p,black"):
-            fig.plot(data=str(bnd), pen=pen, projection=proj, region="d")
+    # Halo first for all three boundary layers, then the lines, so a ridge does not lay
+    # its halo over a transform that was drawn before it.
+    _bnd = [layer(t, n) for n in BOUNDARY_LAYERS if layer(t, n).stat().st_size > 20]
+    for pen in ("1.1p,white", "0.45p,black"):
+        for f in _bnd:
+            fig.plot(data=str(f), pen=pen, projection=proj, region="d")
     for side, flag in (("subduction_left", "+l"), ("subduction_right", "+r")):
         f = layer(t, side)
         if f.exists() and f.stat().st_size > 20:
@@ -304,11 +263,13 @@ def draw_colourbar(fig, cpt, standalone=False):
 
 
 def main():
-    only = ["boundaries"] if "--refresh-boundaries" in sys.argv else None
+    only = list(BOUNDARY_LAYERS) if "--refresh-boundaries" in sys.argv else None
     export_layers(refresh="--refresh" in sys.argv, only=only)
-    if only:
-        for t in TIMES:
-            (CACHE / f"boundaries_plate_{t}Ma.gmt").unlink(missing_ok=True)
+    missing = [f"{n}_{t}Ma" for t in TIMES for n in LAYERS if not layer(t, n).exists()]
+    if missing:
+        raise SystemExit("these reconstructed layers have not been exported: "
+                         + ", ".join(missing)
+                         + "\nrun this script with --refresh to build them")
     cpt, grey_cpt = build_cpts()
     budget = pd.read_csv(OUT / "Fig3_carbonate_budget.csv")
 
