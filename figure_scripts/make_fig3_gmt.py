@@ -88,32 +88,41 @@ def export_layers(refresh=False, only=None):
     model = gplately.PlateReconstruction(pygplates.RotationModel(rot), topology_features=topo,
                                          static_polygons=static, anchor_plate_id=0)
     CACHE.mkdir(parents=True, exist_ok=True)
-    for t in need:
-        gp = gplately.PlotTopologies(model, coastlines=coast, continents=cont, time=t)
-        left, right = gp.get_subduction_direction()
+    def boundaries_of(gp):
         # The boundaries of the RESOLVED RIGID PLATES, which is what the earlier figure
         # drew. Every topological section, the alternative, also returns the sections
         # that build the deforming networks: at 115 Ma that is 469 ridge fragments of
         # about six points each, and they cover the map in short lines.
         if hasattr(gp, "get_topological_plate_boundaries"):
-            bnd = gp.get_topological_plate_boundaries()
-        else:
-            print("  warning: this gplately has no get_topological_plate_boundaries();"
-                  " falling back to every topological section")
-            bnd = gp.get_all_topological_sections()
-        for name, gdf in (("coastlines", gp.get_coastlines()),
-                          ("continents", gp.get_continents()),
-                          ("boundaries", bnd),
-                          ("subduction_left", left),
-                          ("subduction_right", right)):
+            return gp.get_topological_plate_boundaries()
+        print("  warning: this gplately has no get_topological_plate_boundaries();"
+              " falling back to every topological section")
+        return gp.get_all_topological_sections()
+
+    # Each layer is fetched only if it is being written: reconstructing the coastlines
+    # takes far longer than the boundaries, and re-exporting one layer should not pay
+    # for the rest.
+    SOURCES = {"coastlines": lambda gp: gp.get_coastlines(),
+               "continents": lambda gp: gp.get_continents(),
+               "boundaries": boundaries_of,
+               "subduction_left": lambda gp: gp.get_subduction_direction()[0],
+               "subduction_right": lambda gp: gp.get_subduction_direction()[1]}
+
+    for t in need:
+        gp = gplately.PlotTopologies(model, coastlines=coast, continents=cont, time=t)
+        for name in LAYERS:
             if name not in wanted:
                 continue
+            gdf = SOURCES[name](gp)
             path = layer(t, name)
+            # OGR_GMT cannot replace a layer in place, so the previous export has to go
+            # before the new one is written. These are the script's own cache files.
+            path.unlink(missing_ok=True)
             if gdf is None or len(gdf) == 0:
                 path.write_text("# empty\n")
                 continue
             gdf.to_file(path, driver="OGR_GMT")
-        print(f"  [fig3] exported layers for {t} Ma")
+        print(f"  [fig3] exported {', '.join(n for n in LAYERS if n in wanted)} for {t} Ma")
 
 
 # Only the boundaries that are plate boundaries in the ordinary sense. The exported
