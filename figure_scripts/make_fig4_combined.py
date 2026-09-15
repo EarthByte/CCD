@@ -79,7 +79,7 @@ ax2.plot(age,-D["crust_sink"],color=COL["Seafloor weathering"],lw=1.4,ls=(0,(4,1
 ax2.axhline(0.0,color="0.55",lw=0.7,zorder=1)
 # Carbon, not CO2: these fluxes are in megatonnes of CARBON per year, and the two differ
 # by the molar mass ratio 44/12.
-ax2.set_ylabel("Carbon outflux (Mt C yr$^{-1}$)",fontsize=PT_LABEL)
+ax2.set_ylabel("Carbon flux (Mt C yr$^{-1}$)",fontsize=PT_LABEL)
 for _ax in (axa,ax2): _ax.tick_params(labelsize=PT_TICK)
 # Events, ages and styling come from paper_events.py, shared with Figs 2b and 3d so the
 # three panels cannot drift apart.
