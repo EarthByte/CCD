@@ -102,10 +102,11 @@ def plot_one(model: str):
     ax.tick_params(direction="in", which="minor", length=2.5, bottom=True, top=True, right=True)
     ax.grid(alpha=0.1, which="both"); ax.grid(alpha=0.3, which="major")
     ax.legend(loc="upper left", frameon=False, fontsize=7.6)
-    ax.set_title(f"Net atmospheric carbon outflux — end-member carbonate scenarios — {model}",
-                 fontsize=10)
+    # No title: this is Figure S5 of the supplement, and what the panel shows belongs
+    # in the caption. The artwork keeps only the axes and the legend.
 
-    cfg.save_figure(fig, f"net_atmospheric_influx_{model}")
+    cfg.save_figure(fig, f"net_atmospheric_influx_{model}",
+                    paper_name="FigS5_net_outflux_endmembers" if model == "DM2026" else None)
     plt.close(fig)
 
 

@@ -161,11 +161,43 @@ def load_scotese_gast() -> pd.DataFrame:
 # ---------------------------------------------------------------------------
 # Save helper - emits both PNG and PDF to ./output/
 # ---------------------------------------------------------------------------
-def save_figure(fig, stem: str, *, dpi: int = 300, also_pdf: bool = True):
-    out_png = PLOTS_OUT / f"{stem}.png"
-    fig.savefig(out_png, bbox_inches="tight", dpi=dpi)
-    print(f"  wrote {out_png}")
-    if also_pdf:
-        out_pdf = PLOTS_OUT / f"{stem}.pdf"
-        fig.savefig(out_pdf, bbox_inches="tight", dpi=dpi)
-        print(f"  wrote {out_pdf}")
+def _paper_figures_dir():
+    """The paper's figure folder, so a supplementary figure lands beside the rest.
+
+    Same convention as step 9: prefer a sibling Paper/Figures in the authors' working
+    tree, and fall back to the repository's own figures/ in a plain checkout.
+    """
+    for base in (HERE, *HERE.parents):
+        cand = base.parent / "Paper" / "Figures"
+        if cand.is_dir():
+            return cand
+    for base in HERE.parents:
+        cand = base / "figures"
+        if cand.is_dir() and (base / "steps").is_dir():
+            return cand
+    return None
+
+
+PAPER_FIGURES = _paper_figures_dir()
+
+
+def save_figure(fig, stem: str, *, dpi: int = 300, also_pdf: bool = True,
+                paper_name: str | None = None):
+    """Write the figure to ./output/, and, when it is one of the paper's, again
+    into the paper's figure folder under its supplement name - so no figure has to
+    be copied and renamed by hand."""
+    targets = [(PLOTS_OUT, stem)]
+    if paper_name:
+        if PAPER_FIGURES is None:
+            print(f"  [figures] paper figure folder not found; {paper_name} not propagated")
+        else:
+            PAPER_FIGURES.mkdir(parents=True, exist_ok=True)
+            targets.append((PAPER_FIGURES, paper_name))
+    for folder, name in targets:
+        out_png = folder / f"{name}.png"
+        fig.savefig(out_png, bbox_inches="tight", dpi=dpi)
+        print(f"  wrote {out_png}")
+        if also_pdf:
+            out_pdf = folder / f"{name}.pdf"
+            fig.savefig(out_pdf, bbox_inches="tight", dpi=dpi)
+            print(f"  wrote {out_pdf}")
