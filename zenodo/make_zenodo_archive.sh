@@ -58,12 +58,21 @@ COMPONENTS=(
   "present_day_validation_grids|$REPO/data|carbonate_thickness|0"
 )
 
-if [ "$CHECK_ONLY" = "0" ]; then mkdir -p "$OUT"; echo "Writing the archive to $OUT"; fi
+if [ "$CHECK_ONLY" = "0" ]; then # repack_grids.py writes scaled-integer copies into <step8>/repacked/. When they are
+# there they are what gets archived: same values to within 0.1 m, less than half the
+# size. Delete that folder to fall back to the float32 originals.
+REPACKED="$S8/repacked"
+resolve_parent() {   # $1 = default parent, $2 = folder name
+  if [ -d "$REPACKED/$2" ]; then printf '%s' "$REPACKED"; else printf '%s' "$1"; fi
+}
+
+mkdir -p "$OUT"; echo "Writing the archive to $OUT"; fi
 echo
 
 missing=()
 for spec in "${COMPONENTS[@]}"; do
   IFS='|' read -r name parent folder expected <<< "$spec"
+  parent="$(resolve_parent "$parent" "$folder")"
   src="$parent/$folder"
   if [ ! -d "$src" ]; then missing+=("$name: no such folder $src"); continue; fi
   n=$(find "$src" -type f ! -name '.DS_Store' | wc -l | tr -d ' ')
@@ -88,6 +97,7 @@ echo "All components present."
 if [ "$CHECK_ONLY" = "1" ]; then
   for spec in "${COMPONENTS[@]}"; do
     IFS='|' read -r name parent folder expected <<< "$spec"
+    parent="$(resolve_parent "$parent" "$folder")"
     printf '  %-32s %6s  %s\n' "$name" "$(du -sh "$parent/$folder" | cut -f1)" "$parent/$folder"
   done
   printf '  %-32s %6s  %s\n' animations "$(du -ch "${MOVIES[@]/#/$VIDEOS/}" | tail -1 | cut -f1)" "$VIDEOS"
@@ -96,6 +106,7 @@ fi
 
 for spec in "${COMPONENTS[@]}"; do
   IFS='|' read -r name parent folder expected <<< "$spec"
+  parent="$(resolve_parent "$parent" "$folder")"
   echo "  $name  <-  $parent/$folder"
   tar --exclude='.DS_Store' -czf "$OUT/$name.tar.gz" -C "$parent" "$folder"
 done

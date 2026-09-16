@@ -56,11 +56,30 @@ Each of the three scenario archives contains 171 time steps of three grids:
 | `deposition_mask_0.25_<age>.nc` | Where carbonate is deposited at that reconstruction time: seafloor above the CCD and younger than the onset of pelagic carbonate deposition | 1 = deposition, 0 = none |
 
 `<age>` is the reconstruction age in Ma, an integer from 0 to 170. All grids are
-global NetCDF (CF-1.7), 0.25° by 0.25°, 1441 × 721 nodes, longitude −180° to 180°
-and latitude −90° to 90°, with the data in the variable `z` as 32-bit floats and
-land and undeposited ocean floor as NaN. They are in **reconstructed (paleo)
+global NetCDF-4 (CF-1.7), 0.25° by 0.25°, 1441 × 721 nodes, longitude −180° to 180°
+and latitude −90° to 90°, with the data in the variable `z` and land and undeposited
+ocean floor as missing. They are in **reconstructed (paleo)
 coordinates**: each grid is already in the frame of its own reconstruction time and
 must not be rotated again.
+
+### How the values are stored
+
+Every grid holds its values as scaled integers rather than floating point, which
+halves the archive without changing how it is used. **Nothing needs to be unpacked by
+hand:** `scale_factor` and `add_offset` are standard CF attributes, so GMT, xarray,
+gplately, ncview, MATLAB and every other NetCDF reader return metres transparently.
+
+| Grids | Stored as | Step | Largest error |
+|-------|-----------|------|---------------|
+| carbonate thickness, compacted and decompacted | `int16`, `scale_factor` 0.1 | 0.1 m | 0.05 m |
+| paleobathymetry | `int16`, `scale_factor` 0.25 | 0.25 m | 0.125 m |
+| deposition masks | `int8` | — | none, the data is 1 or nothing |
+
+For scale, the spread between the minimum and maximum sedimentation-rate scenarios at
+0 Ma has a median of 19 m and a 95th percentile of 140 m, so the 0.05 m storage step
+is some four hundred times finer than the model's own uncertainty. The grids were
+written by `zenodo/repack_grids.py` in the code repository, which reads every file
+back after writing and compares it against the original before the file is kept.
 
 ### The three scenarios
 
