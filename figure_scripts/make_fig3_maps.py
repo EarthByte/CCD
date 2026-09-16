@@ -54,6 +54,32 @@ matplotlib.rcParams["font.sans-serif"] = ["Helvetica", "Arial", "Nimbus Sans",
                                           "Liberation Sans", "DejaVu Sans"]
 matplotlib.rcParams["pdf.fonttype"] = 42      # embed as TrueType, not as outlines
 matplotlib.rcParams["axes.unicode_minus"] = False
+# Superscripts and subscripts - the 10^6 km^3 Myr^-1 of panel (D)'s axis labels - are set
+# by matplotlib's maths typesetter, which ignores the family above and has its own font.
+# Left alone it renders them in DejaVu Sans and embeds a second face in the PDF, so a
+# label reads in two typefaces and Illustrator inherits both. Pointing every maths face
+# at the sans-serif chain puts the whole figure in one font.
+matplotlib.rcParams["mathtext.fontset"] = "custom"
+matplotlib.rcParams["mathtext.default"] = "regular"
+for _k, _v in (("mathtext.rm", "sans"), ("mathtext.it", "sans:italic"),
+               ("mathtext.bf", "sans:bold"), ("mathtext.sf", "sans"),
+               ("mathtext.tt", "sans"), ("mathtext.cal", "sans:italic")):
+    matplotlib.rcParams[_k] = _v
+
+# Which face matplotlib actually resolved. font.sans-serif is a fallback chain, so a
+# Helvetica it cannot find is not an error but a silent substitution, and the first the
+# figure would know of it is the journal asking why the PDF carries DejaVu Sans.
+from matplotlib import font_manager as _fm
+try:
+    _font_file = _fm.findfont(_fm.FontProperties(family=matplotlib.rcParams["font.sans-serif"]))
+    _font_name = _fm.get_font(_font_file).family_name
+except Exception as _e:                       # never let a font query stop the figure
+    _font_file, _font_name = "", f"unresolved ({_e})"
+print(f"  text font: {_font_name}" + (f" [{Path(_font_file).name}]" if _font_file else ""))
+if _font_name.split(" ")[0] not in ("Helvetica", "Arial"):
+    print("  WARNING: Geology asks for Helvetica or Arial, and matplotlib resolved "
+          f"{_font_name}. Put Helvetica or Arial where matplotlib can see it, delete its "
+          "font cache (~/.matplotlib/fontlist-*.json), and run this again.")
 PT_LABEL, PT_TICK, PT_EVENT, PT_AGE, PT_LETTER = 8.0, 7.0, 7.0, 8.0, 13.0
 W_PAGE_MM = 185.0                             # Geology, full page
 
@@ -248,6 +274,18 @@ for ext in ("png","pdf"):
     # sizes above survive placement unscaled. A tight box trims to the ink and the
     # journal then scales whatever it gets.
     fig.savefig(OUT/f"Fig3_carbonate_thickness_maps.{ext}", dpi=OUT_DPI)
+
+# The PDF is what Illustrator opens, so the font is checked on the artwork rather than
+# on the settings that were meant to produce it: every face the file embeds is named,
+# and a second family means a run of text got past the sans-serif chain.
+import re as _re
+_pdf = (OUT/"Fig3_carbonate_thickness_maps.pdf").read_bytes()
+_faces = sorted({m.decode().split("+")[-1]
+                 for m in _re.findall(rb"/BaseFont\s*/([A-Za-z0-9+#.\-]+)", _pdf)})
+print("  fonts embedded in the PDF: " + (", ".join(_faces) if _faces else "none found"))
+_fams = {f.split("-")[0] for f in _faces}
+if len(_fams) > 1:
+    print("  WARNING: the PDF carries more than one typeface: " + ", ".join(sorted(_fams)))
 _right_edge = _cells["D"][0] + BUD_LEFT + BUD_W
 if _right_edge + 15.0 > FIG_W + 0.5:
     print(f"  WARNING: panel (D) leaves {FIG_W-_right_edge:.1f} mm for its right-hand "
