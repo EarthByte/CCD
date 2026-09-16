@@ -10,6 +10,14 @@ authors:
     given-names: R. Dietmar
     affiliation: "EarthByte Group, School of Geosciences, The University of Sydney"
 repository-code: "https://github.com/EarthByte/CCD"
+doi: 10.5281/zenodo.22792794
+identifiers:
+  - type: doi
+    value: 10.5281/zenodo.22792794
+    description: "Concept DOI, resolving to the latest release of this repository"
+  - type: doi
+    value: 10.5281/zenodo.22792805
+    description: "DOI of release v1.0.0"
 license: MIT
 version: 1.0.0
 date-released: "2026-09-16"

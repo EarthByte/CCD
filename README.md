@@ -211,8 +211,16 @@ grids that step 10 also reads are not redistributed; their sources are given in
 
 ## Citation
 
-If you use this code or the derived CCD record, please cite the paper and this
-repository (see `CITATION.cff`), and the Zenodo archive for the grids.
+If you use this code or the derived CCD record, please cite the paper, this
+repository and the grid archive:
+
+| What | DOI |
+|------|-----|
+| This repository, all versions | [10.5281/zenodo.22792794](https://doi.org/10.5281/zenodo.22792794) |
+| Grids and animations | [10.5281/zenodo.22785465](https://doi.org/10.5281/zenodo.22785465) |
+
+Cite the all-versions DOI unless you need to pin a particular release; it always
+resolves to the current one. `CITATION.cff` carries the machine-readable form.
 
 Two pieces of Zenodo metadata live here and describe different records.
 `.zenodo.json` at the repository root is what Zenodo reads when it archives a
