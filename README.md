@@ -1,9 +1,9 @@
-# CCD — global carbonate compensation depth evolution over the last 170 million years and its drivers
+# CCD — evolution and drivers of the global carbonate compensation depth over the past 170 million years
 
 Code, derived results and figures for:
 
-> Dutkiewicz, A., and Müller, R.D., *Global carbonate compensation depth evolution
-> over the last 170 million years and its drivers* (submitted). EarthByte Group,
+> Dutkiewicz, A., and Müller, R.D., *Evolution and drivers of the global carbonate
+> compensation depth over the past 170 million years* (submitted). EarthByte Group,
 > School of Geosciences, The University of Sydney.
 
 The repository reconstructs an area-weighted global carbonate compensation depth

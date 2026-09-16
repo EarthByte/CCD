@@ -1,5 +1,5 @@
 cff-version: 1.2.0
-title: "CCD — global carbonate compensation depth evolution over the last 170 million years and its drivers"
+title: "CCD — evolution and drivers of the global carbonate compensation depth over the past 170 million years"
 message: "If you use this software or the derived CCD record, please cite both the paper and this repository."
 type: software
 authors:
@@ -13,7 +13,7 @@ repository-code: "https://github.com/EarthByte/CCD"
 license: MIT
 preferred-citation:
   type: article
-  title: "Global carbonate compensation depth evolution over the last 170 million years and its drivers"
+  title: "Evolution and drivers of the global carbonate compensation depth over the past 170 million years"
   authors:
     - family-names: Dutkiewicz
       given-names: Adriana
@@ -23,7 +23,7 @@ preferred-citation:
   year: 2026
 references:
   - type: dataset
-    title: "Global carbonate compensation depth evolution over the last 170 million years and its drivers — model grids and animations"
+    title: "Evolution and drivers of the global carbonate compensation depth over the past 170 million years — model grids and animations"
     authors:
       - family-names: Dutkiewicz
         given-names: Adriana

@@ -1,4 +1,4 @@
-# Global carbonate compensation depth evolution over the last 170 million years and its drivers — model grids and animations
+# Evolution and drivers of the global carbonate compensation depth over the past 170 million years — model grids and animations
 
 Dutkiewicz, A., and Müller, R.D.
 EarthByte Group, School of Geosciences, The University of Sydney
@@ -168,11 +168,11 @@ at `steps/step10_carbon_cycle_degassing/`, and they are not redistributed here.
 The grids and animations are released under CC BY 4.0. If you use them, cite the
 paper, this archive, and the plate model:
 
-> Dutkiewicz, A., and Müller, R.D. *Global carbonate compensation depth evolution
-> over the last 170 million years and its drivers.* Geology.
+> Dutkiewicz, A., and Müller, R.D. *Evolution and drivers of the global carbonate
+> compensation depth over the past 170 million years.* Geology.
 
-> Dutkiewicz, A., and Müller, R.D. *Global carbonate compensation depth evolution
-> over the last 170 million years and its drivers — model grids and animations.*
+> Dutkiewicz, A., and Müller, R.D. *Evolution and drivers of the global carbonate
+> compensation depth over the past 170 million years — model grids and animations.*
 > Zenodo, https://doi.org/10.5281/zenodo.22785465
 
 The carbonate sediment thickness model follows the method of Dutkiewicz, A.,
