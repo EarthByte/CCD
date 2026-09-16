@@ -146,18 +146,44 @@ def render_video(times, grid_fmt, out_dir, out_prefix, cbar_label,
     prev = None
     if os.path.exists(sig_path):
         prev = open(sig_path).read().strip()
-    existing = [f for f in os.listdir(frame_dir) if f.startswith("frame_")]
+    existing = sorted(f for f in os.listdir(frame_dir) if f.startswith("frame_"))
+    stale = None
     if prev is None and existing:
         # Frames predating the signature file: there is no way to tell what colour map
         # they were drawn with, so redraw rather than assume. This costs one full
         # render, once.
-        print(f"  {len(existing)} cached frames carry no render signature; "
-              "redrawing them so the video matches the current colour map")
-        force = True
+        stale = "they carry no render signature"
     elif prev is not None and prev != sig:
-        print("  colour map or layout has changed since these frames were drawn; "
-              "re-rendering all of them")
+        stale = "the colour map or the layout has changed since they were drawn"
+    if not stale and existing and prev is not None:
+        # Frames older than the signature file were drawn before the settings now on
+        # record. That is how a mixed directory arises: a run over part of the range
+        # redraws its own frames and writes the signature, and the rest stay behind
+        # under the old settings, looking current.
+        older = [f for f in existing
+                 if os.path.getmtime(os.path.join(frame_dir, f)) < os.path.getmtime(sig_path)]
+        if older:
+            stale = "they predate the settings on record"
+            existing = older
+    if stale:
+        # EVERY cached frame goes, not just the ones this run redraws. A run over part
+        # of the time range - a preview at a coarse step, say - would otherwise leave
+        # the rest of the frames in place, and the video assembled afterwards would
+        # alternate between the new frames and the old ones.
+        keep = os.path.join(frame_dir, "_superseded_" + _t.strftime("%Y%m%d_%H%M%S"))
+        os.makedirs(keep, exist_ok=True)
+        for f in existing:
+            shutil.move(os.path.join(frame_dir, f), os.path.join(keep, f))
+        print(f"  {len(existing)} cached frames moved to {os.path.basename(keep)}: {stale}")
         force = True
+
+    if prev != sig:
+        # Written once, when the settings change, and before anything is drawn: its
+        # timestamp is then the moment these settings came into force, and any frame
+        # older than it was drawn under the previous ones. Rewriting it every run would
+        # make every cached frame look stale at the next.
+        with open(sig_path, "w") as fh:
+            fh.write(sig + "\n")
 
     n_done = 0
     for T in times:
@@ -205,17 +231,46 @@ def render_video(times, grid_fmt, out_dir, out_prefix, cbar_label,
         fig.savefig(out, dpi=dpi); plt.close(fig)
         n_done += 1
         if int(T) % 10 == 0: print(f"  {int(T):3d} Ma -> {os.path.basename(out)}")
-    with open(sig_path, "w") as fh:
-        fh.write(sig + "\n")
     print(f"  frames ready: {n_done}")
 
     if shutil.which("ffmpeg") is None:
         print("  ffmpeg not on PATH; frames left in", frame_dir); return
     back = os.path.join(out_dir, f"{out_prefix}_back_in_time.mp4")
     fwd  = os.path.join(out_dir, f"{out_prefix}_forward_in_time.mp4")
-    subprocess.run(["ffmpeg","-y","-framerate",str(framerate),
-        "-i",os.path.join(frame_dir,"frame_%04d.png"),"-pix_fmt","yuv420p",
-        "-vcodec","libx264","-crf","20","-vf","scale=trunc(iw/2)*2:trunc(ih/2)*2",back],check=True)
-    subprocess.run(["ffmpeg","-y","-i",back,"-vf","reverse","-vcodec","libx264",
-        "-crf","20","-pix_fmt","yuv420p",fwd],check=True)
+    # Assembled from exactly the frames this run covers: the numbered pattern ffmpeg
+    # reads by default takes whatever frame_NNNN.png files are in the directory, so a
+    # partial run produced a video mixing its own frames with whatever an earlier run
+    # had left behind. The frames are linked into their own directory under a gapless
+    # sequence, which ffmpeg reads the same way it read the original pattern. (The
+    # concat demuxer, the other way of naming files explicitly, gives every image the
+    # same timestamp unless each is given a duration, and the video then holds one
+    # frame repeated.)
+    frames = [os.path.join(frame_dir, f"frame_{int(T):04d}.png") for T in times]
+    frames = [f for f in frames if os.path.exists(f)]
+    if not frames:
+        print("  no frames to assemble"); return
+    def _sequence(name, ordered):
+        """Link the frames under a gapless sequence, and return the pattern."""
+        d = os.path.join(frame_dir, name)
+        os.makedirs(d, exist_ok=True)
+        for f in os.listdir(d):                   # links this function made last time
+            q = os.path.join(d, f)
+            if os.path.islink(q):
+                os.unlink(q)
+        for i, f in enumerate(ordered):
+            os.symlink(os.path.abspath(f), os.path.join(d, f"seq_{i:05d}.png"))
+        return os.path.join(d, "seq_%05d.png")
+
+    print(f"  assembling {len(frames)} frames, {os.path.basename(frames[0])} to "
+          f"{os.path.basename(frames[-1])}")
+    for path, pattern in ((back, _sequence("_sequence_back", frames)),
+                          (fwd, _sequence("_sequence_forward", frames[::-1]))):
+        # Each video is encoded from its own ordered set of frames. Reversing the first
+        # video with the `reverse` filter, the earlier way of making the second, worked
+        # only while the first carried per-frame timestamps; assembled from a list that
+        # gave every frame the same timestamp, reversing collapsed it to a single frame
+        # and the forward video was the last frame held for its whole length.
+        subprocess.run(["ffmpeg","-y","-framerate",str(framerate),"-i",pattern,
+            "-pix_fmt","yuv420p","-vcodec","libx264","-crf","20",
+            "-vf","scale=trunc(iw/2)*2:trunc(ih/2)*2",path],check=True)
     print("  wrote", back, "and", fwd)
