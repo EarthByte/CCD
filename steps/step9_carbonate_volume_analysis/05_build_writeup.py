@@ -409,8 +409,10 @@ def main() -> int:
     # ---- References
     add_h1(doc, "References")
     refs = [
-        "Alfonso, C.P., et al. (2024). [Title and DOI to be inserted at "
-        "publication time.]",
+        "Alfonso, C.P., Müller, R.D., Mather, B., and Anthony, M. (2024). "
+        "Spatio-temporal copper prospectivity in the American Cordillera predicted "
+        "by positive-unlabeled machine learning. GSA Bulletin 137, 702-711. "
+        "https://doi.org/10.1130/B37614.1",
         "Boss, S.K., and Wilkinson, B.H. (1991). Planktogenic / eustatic "
         "control on cratonic / oceanic carbonate accumulation. Journal of "
         "Geology 99(4), 497-513.",
