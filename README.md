@@ -1,11 +1,10 @@
-# CCD — a global carbonate compensation depth record and its solid-Earth carbon-cycle test
+# CCD — global carbonate compensation depth evolution over the last 170 million years and its drivers
 
 Code, derived results and figures for:
 
-> Dutkiewicz, A., and Müller, R.D., *Globally coherent Cenozoic deepening of the
-> carbonate compensation depth tests surface control of deep-ocean carbonate
-> chemistry* (submitted). EarthByte Group, School of Geosciences, The University
-> of Sydney.
+> Dutkiewicz, A., and Müller, R.D., *Global carbonate compensation depth evolution
+> over the last 170 million years and its drivers* (submitted). EarthByte Group,
+> School of Geosciences, The University of Sydney.
 
 The repository reconstructs an area-weighted global carbonate compensation depth
 (CCD) from Atlantic, Pacific and Indian Ocean records, calibrates it against
