@@ -11,6 +11,8 @@ authors:
     affiliation: "EarthByte Group, School of Geosciences, The University of Sydney"
 repository-code: "https://github.com/EarthByte/CCD"
 license: MIT
+version: 1.0.0
+date-released: "2026-09-16"
 preferred-citation:
   type: article
   title: "Evolution and drivers of the global carbonate compensation depth over the past 170 million years"
