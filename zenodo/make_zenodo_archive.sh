@@ -4,6 +4,7 @@
 #
 #   ./zenodo/make_zenodo_archive.sh [output_dir]
 #   ./zenodo/make_zenodo_archive.sh --check       # verify the sources, archive nothing
+#   ./zenodo/make_zenodo_archive.sh --manifest-only [dir]   # rehash what is already there
 #
 # Default output_dir is ../CCD_zenodo_archive, i.e. beside the repository and
 # outside it, so a multi-gigabyte archive is never a candidate for committing.
@@ -17,8 +18,9 @@ set -euo pipefail
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO="$(cd "$HERE/.." && pwd)"
-CHECK_ONLY=0
+CHECK_ONLY=0; MANIFEST_ONLY=0
 if [ "${1:-}" = "--check" ]; then CHECK_ONLY=1; shift; fi
+if [ "${1:-}" = "--manifest-only" ]; then MANIFEST_ONLY=1; shift; fi
 OUT="${1:-$(cd "$REPO/.." && pwd)/CCD_zenodo_archive}"
 
 # Where the grids live. The heavy grids are git-ignored, so in the authors' working
@@ -68,6 +70,25 @@ resolve_parent() {   # $1 = default parent, $2 = folder name
 
 mkdir -p "$OUT"; echo "Writing the archive to $OUT"; fi
 echo
+
+if [ "$MANIFEST_ONLY" = "1" ]; then
+  # Rehash whatever is in the archive folder. Use this after repack_grids.py
+  # --to-archive, which writes the tarballs itself: a full run would rebuild them
+  # from the float32 sources and undo the conversion.
+  [ -d "$OUT" ] || { echo "no such folder: $OUT" >&2; exit 1; }
+  cd "$OUT"
+  : > MANIFEST.txt
+  for f in *.tar.gz README.md; do
+    [ -f "$f" ] || continue
+    if command -v sha256sum >/dev/null 2>&1; then sha256sum "$f" >> MANIFEST.txt
+    else shasum -a 256 "$f" >> MANIFEST.txt; fi
+  done
+  echo "MANIFEST.txt rewritten for $(grep -c . MANIFEST.txt) files in $OUT"
+  ls -lh | tail -n +2
+  echo
+  echo "Total: $(du -sh . | cut -f1)"
+  exit 0
+fi
 
 missing=()
 for spec in "${COMPONENTS[@]}"; do
