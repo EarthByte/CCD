@@ -169,22 +169,26 @@ def budget_series() -> dict:
 
 
 def draw_budget(ax, s: dict, label_size: float = PT_LABEL, tick_size: float = PT_TICK,
-                events: bool = True, event_size: float = 6.5):
+                events: bool = True, event_size: float = 6.5, lw_scale: float = 1.0):
     """Draw the budget onto an existing axes, returning the twinned right-hand axes.
 
     Shared so that the panel in Figure 3 of the paper and any standalone rendering come
     from one piece of code rather than two that can drift apart.
+
+    lw_scale puts every line this function draws on the calling figure's line-weight
+    scale, so the panel does not print heavier than the maps it sits beside. The axes
+    spines and ticks are not set here: they follow rcParams, which the caller sets.
     """
-    ax.plot(s["gain_age"], s["gain"], color=VOL_COLOUR, lw=1.6)
+    ax.plot(s["gain_age"], s["gain"], color=VOL_COLOUR, lw=1.6 * lw_scale)
     ax.set_xlim(TMAX, 0)
     ax.set_xlabel("Age (Ma)", fontsize=label_size)
     ax.set_ylabel("Net carbonate volume gain\n(10$^6$ km$^3$ Myr$^{-1}$)",
                   fontsize=label_size, color=VOL_COLOUR)
     ax.tick_params(axis="y", labelcolor=VOL_COLOUR)
-    ax.axhline(0, color="0.75", lw=0.6, zorder=0)
+    ax.axhline(0, color="0.75", lw=0.6 * lw_scale, zorder=0)
 
     bx = ax.twinx()
-    bx.plot(s["age"], s["area"], color=AREA_COLOUR, lw=1.4, ls=(0, (5, 2)))
+    bx.plot(s["age"], s["area"], color=AREA_COLOUR, lw=1.4 * lw_scale, ls=(0, (5, 2)))
     bx.set_ylabel("Seafloor area above\nthe CCD (10$^6$ km$^2$)",
                   fontsize=label_size, color=AREA_COLOUR)
     bx.tick_params(axis="y", labelcolor=AREA_COLOUR)
@@ -192,7 +196,7 @@ def draw_budget(ax, s: dict, label_size: float = PT_LABEL, tick_size: float = PT
     for a in (ax, bx):
         a.tick_params(labelsize=tick_size)
         a.spines["top"].set_visible(False)
-    ax.grid(axis="x", color="0.9", lw=0.4)
+    ax.grid(axis="x", color="0.9", lw=0.4 * lw_scale)
     ax.set_axisbelow(True)
     if events:
         # Same events, ages and styling as Fig. 2b, from the shared list.
@@ -200,7 +204,7 @@ def draw_budget(ax, s: dict, label_size: float = PT_LABEL, tick_size: float = PT
         spec = ilu.spec_from_file_location("paper_events", _HERE / "paper_events.py")
         ev = ilu.module_from_spec(spec)
         spec.loader.exec_module(ev)
-        ev.draw_events(ax, fontsize=event_size)
+        ev.draw_events(ax, fontsize=event_size, lw_scale=lw_scale)
     return bx
 
 

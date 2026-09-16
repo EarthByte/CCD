@@ -26,7 +26,8 @@ LINE_KW = dict(color="0.45", ls=":", lw=1.0, zorder=2)
 TEXT_KW = dict(color="0.30", ha="center", va="bottom", zorder=6)
 
 
-def draw_events(ax, fontsize: float = 8.5, y: float = 1.005, pad_pt: float = 2.0) -> None:
+def draw_events(ax, fontsize: float = 8.5, y: float = 1.005, pad_pt: float = 2.0,
+                lw_scale: float = 1.0) -> None:
     """Dotted verticals with labels just above the axes.
 
     A label that would touch its neighbour is lifted onto a second line instead. On a
@@ -35,9 +36,12 @@ def draw_events(ax, fontsize: float = 8.5, y: float = 1.005, pad_pt: float = 2.0
     only fires on real overlap called that clear.
     """
     fig = ax.figure
+    # lw_scale lets the calling figure put these verticals on its own line-weight
+    # scale; left at 1.0 they are drawn exactly as LINE_KW specifies.
+    line_kw = dict(LINE_KW, lw=LINE_KW["lw"] * lw_scale)
     drawn = []
     for age, label in EVENTS:
-        ax.axvline(age, **LINE_KW)
+        ax.axvline(age, **line_kw)
         drawn.append((age, ax.text(age, y, label, transform=ax.get_xaxis_transform(),
                                    fontsize=fontsize, **TEXT_KW)))
     fig.canvas.draw()

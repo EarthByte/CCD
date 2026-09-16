@@ -56,6 +56,32 @@ matplotlib.rcParams["pdf.fonttype"] = 42      # embed as TrueType, not as outlin
 matplotlib.rcParams["axes.unicode_minus"] = False
 PT_LABEL, PT_TICK, PT_EVENT, PT_AGE, PT_LETTER = 8.0, 7.0, 7.0, 8.0, 13.0
 W_PAGE_MM = 185.0                             # Geology, full page
+
+# ---- line weights ----------------------------------------------------------
+# Every rule on the page is drawn through thin(), so the figure carries one line-weight
+# scale instead of a dozen independent numbers. The PDF hands Illustrator whatever
+# weights it was drawn with, and at 185 mm the earlier ones printed heavier than the
+# type they sit beside. Scaling them together leaves the relative emphasis between a
+# plate boundary, a coastline and a graticule exactly as it was.
+LW_SCALE = 0.75
+LW_FLOOR = 0.20                               # pt, the weight below which a rule breaks up in print
+
+
+def thin(w: float) -> float:
+    """A drawn line weight in points, on the figure's common scale."""
+    return max(w * LW_SCALE, LW_FLOOR)
+
+
+# The rules matplotlib draws on its own - the spines of panel (D), the box around the
+# colour bar and every tick - take the 0.8 pt default unless they are told otherwise,
+# which is why the colour-bar box printed heavier than the maps beside it.
+matplotlib.rcParams["axes.linewidth"] = thin(0.8)
+matplotlib.rcParams["patch.linewidth"] = thin(1.0)
+matplotlib.rcParams["grid.linewidth"] = thin(0.8)
+for _k in ("xtick.major.width", "ytick.major.width"):
+    matplotlib.rcParams[_k] = thin(0.8)
+for _k in ("xtick.minor.width", "ytick.minor.width"):
+    matplotlib.rcParams[_k] = thin(0.6)
 from matplotlib.colors import ListedColormap, BoundaryNorm
 from matplotlib.cm import ScalarMappable
 import cartopy.crs as ccrs
@@ -129,7 +155,7 @@ axd=fig.add_axes(_cell(_cells["D"][0]+BUD_LEFT, _cells["D"][1]+BUD_BOTTOM, BUD_W
 
 for ax,T in zip(axes,TIMES):
     t0=time.time()
-    ax.set_global(); ax.spines["geo"].set_linewidth(0.7)
+    ax.set_global(); ax.spines["geo"].set_linewidth(thin(0.7))
     ax.set_facecolor("0.74")   # any cell with no grid data reads as continental crust, not white
     d=xr.open_dataset(_thickness_grid(T)); z=d["z"].values
     if GRIDS_ARE_RECONSTRUCTED or T==0:
@@ -151,27 +177,27 @@ for ax,T in zip(axes,TIMES):
         print(f"  warning: no continental mask for {T} Ma ({_cm.name}) - deforming areas will be white")
     gp=gplately.PlotTopologies(model, coastlines=coast, continents=cont, time=T)
     gp.plot_continents(ax, facecolor="0.74", edgecolor="none", zorder=2)
-    gp.plot_coastlines(ax, color="0.4", linewidth=0.22, zorder=3)
-    for w,c,zz in [(1.5,"white",4),(0.65,"black",5)]:
+    gp.plot_coastlines(ax, color="0.4", linewidth=thin(0.22), zorder=3)
+    for w,c,zz in [(thin(1.5),"white",4),(thin(0.65),"black",5)]:
         gp.plot_topological_plate_boundaries(ax, color=c, linewidth=w, zorder=zz)
     gp.plot_subduction_teeth(ax, color="black", zorder=6)
     # graticule: parallels every 30 deg and meridians every 60 deg. The +-180
     # meridians are omitted because the Mollweide outline already draws them.
     ax.gridlines(ylocs=[-60, -30, 0, 30, 60], xlocs=[-120, -60, 0, 60, 120],
-                 color="0.30", linewidth=0.35, alpha=0.55, zorder=8)
+                 color="0.30", linewidth=thin(0.35), alpha=0.55, zorder=8)
     for _lat in (-60, -30, 0, 30, 60):
         ax.plot([-180, -174], [_lat, _lat], transform=ccrs.PlateCarree(),
-                color="black", lw=0.9, solid_capstyle="butt", zorder=9)
+                color="black", lw=thin(0.9), solid_capstyle="butt", zorder=9)
         _t = "0\u00b0" if _lat == 0 else f"{abs(_lat)}\u00b0{'N' if _lat > 0 else 'S'}"
         ax.text(-171, _lat, _t, transform=ccrs.PlateCarree(), fontsize=6.0,
                 va="center", ha="left", zorder=10,
-                path_effects=[_pe.withStroke(linewidth=1.8, foreground="white")])
+                path_effects=[_pe.withStroke(linewidth=thin(1.8), foreground="white")])
     # Panel letters are placed later, in figure coordinates, so that all four line up.
     # age label in the top left of the map box, where the Mollweide outline leaves the
     # corner empty
     ax.text(0.085, 0.975, f"{T} Ma", transform=ax.transAxes, fontsize=PT_AGE,
             va="top", ha="left", zorder=10,
-            path_effects=[_pe.withStroke(linewidth=2.0, foreground="white")])
+            path_effects=[_pe.withStroke(linewidth=thin(2.0), foreground="white")])
     print(f"{T} Ma done {round(time.time()-t0,1)}s")
 
 # Shared colour bar, in the band under the 115 Ma map. Uniform spacing draws every
@@ -191,7 +217,7 @@ _spec=_ilu.spec_from_file_location("carbonate_budget", _HERE/"carbonate_budget.p
 _cb=_ilu.module_from_spec(_spec); _spec.loader.exec_module(_cb)
 _series=_cb.budget_series()
 _bx=_cb.draw_budget(axd, _series, label_size=PT_LABEL, tick_size=PT_TICK,
-                    event_size=PT_EVENT)
+                    event_size=PT_EVENT, lw_scale=LW_SCALE)
 _cb.write_csv(_series)
 
 # Part letters at the top left of each cell, in figure fractions: the maps and the
@@ -203,6 +229,19 @@ for _l in "ABCD":
 print(f"  budget panel: r = {_series['r']:.2f} between net gain and area above the CCD")
 _bad=_cb.text_collisions(fig,[(axd,True),(_bx,False),(cax,False)])
 print("  text collisions (panel d): "+(", ".join(_bad) if _bad else "none"))
+
+# The weights the page actually carries, reported rather than eyeballed: a change of
+# LW_SCALE cannot quietly take a rule under what a press can hold, and any weight the
+# floor had to catch is named.
+_WEIGHTS = {"plate boundaries": 0.65, "plate-boundary halo": 1.5, "coastlines": 0.22,
+            "map outline": 0.7, "graticule": 0.35, "latitude ticks": 0.9,
+            "colour-bar box, panel (D) frame and ticks": 0.8,
+            "budget curves": 1.6}
+print("  line weights at printed size (pt): "
+      + ", ".join(f"{k} {thin(w):.2f}" for k, w in _WEIGHTS.items()))
+_held = [k for k, w in _WEIGHTS.items() if w * LW_SCALE < LW_FLOOR]
+if _held:
+    print(f"  held at the {LW_FLOOR:.2f} pt floor rather than scaled: " + ", ".join(_held))
 
 for ext in ("png","pdf"):
     # No tight bounding box: the canvas IS the printed page, 185 mm wide, so the type
