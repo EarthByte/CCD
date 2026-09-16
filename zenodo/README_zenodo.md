@@ -24,7 +24,7 @@ in the repository that does not need a grid runs without this archive.
 | `carbonate_sediment_thickness_mean.tar.gz` | Carbonate sediment thickness, central sedimentation-rate scenario | 513 | 451 MB |
 | `carbonate_sediment_thickness_min.tar.gz` | Carbonate sediment thickness, minimum sedimentation-rate scenario | 513 | 451 MB |
 | `carbonate_sediment_thickness_max.tar.gz` | Carbonate sediment thickness, maximum sedimentation-rate scenario | 513 | 451 MB |
-| `paleobathymetry.tar.gz` | Merged paleobathymetry driving the thickness model | 171 | 396 MB |
+| `paleobathymetry.tar.gz` | Paleobathymetry driving the thickness model | 171 | 396 MB |
 | `continental_masks.tar.gz` | Reconstructed continental masks, used to exclude continental crust | 171 | 11 MB |
 | `plate_model.tar.gz` | The plate model the reconstructions run on | — | 149 MB |
 | `present_day_validation_grids.tar.gz` | Observed present-day carbonate thickness, min / mean / max | 3 | 5 MB |
@@ -105,9 +105,10 @@ propagating uncertainty; use the central one if you want a single best estimate.
 ## Paleobathymetry grids
 
 `paleobathymetry_<age>Ma.nc`, 171 grids from 0 to 170 Ma at 1 Myr, global, in
-metres below sea level and in reconstructed coordinates. These set the depth that
-the CCD is compared against at every node, so the thickness grids cannot be
-reproduced without them.
+metres below sea level and in reconstructed coordinates. They are computed on the
+Alfonso et al. (2024) plate model following the pyBacktrack 1.5 method of Müller et
+al. (2026). These set the depth that the CCD is compared against at every node, so
+the thickness grids cannot be reproduced without them.
 
 ## Continental masks
 
@@ -193,6 +194,15 @@ paper, this archive, and the plate model:
 > Dutkiewicz, A., and Müller, R.D. *Evolution and drivers of the global carbonate
 > compensation depth over the past 170 million years — model grids and animations.*
 > Zenodo, https://doi.org/10.5281/zenodo.22785465
+
+The paleobathymetry is computed on the plate model of Alfonso, C.P., Müller, R.D.,
+Mather, B., and Anthony, M., 2024, Spatio-temporal copper prospectivity in the
+American Cordillera predicted by positive-unlabeled machine learning: GSA Bulletin,
+v. 137, p. 702–711, https://doi.org/10.1130/B37614.1, following the pyBacktrack 1.5
+method of Müller, R.D., Cannon, J., Williams, S., Dutkiewicz, A., and Wright, N.,
+2026, PyBacktrack 1.5: A community tool for reconstructing paleobathymetry of drill
+sites, geohistory and global paleobathymetry: EGUsphere [preprint],
+https://doi.org/10.5194/egusphere-2026-3680.
 
 The carbonate sediment thickness model follows the method of Dutkiewicz, A.,
 Müller, R.D., Cannon, J., Vaughan, S. and Zahirovic, S., 2019, Sequestration and

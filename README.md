@@ -179,7 +179,9 @@ It contains:
   scenarios — minimum, central and maximum carbonate sedimentation rate — each
   carrying the compacted thickness, the decompacted thickness and the deposition
   mask at every time step
-- **Paleobathymetry grids**, 170–0 Ma at 1 Myr, which drive the thickness model
+- **Paleobathymetry grids**, 170–0 Ma at 1 Myr, which drive the thickness model,
+  computed on the Alfonso et al. (2024) plate model following the pyBacktrack 1.5
+  method of Müller et al. (2026)
 - **Reconstructed continental masks**, matching those times
 - **the plate model** the reconstructions run on
 - **the present-day carbonate thickness grids** used for validation (also in `data/`)

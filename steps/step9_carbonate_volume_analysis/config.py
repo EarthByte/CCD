@@ -7,7 +7,8 @@ Two grid sets:
     BW1991 -- compacted carbonate sediment thickness using the Boss &
               Wilkinson (1991) CCD curve.
 
-Both products use the same Alfonso et al. (2024) pyBacktrack paleobathymetry
+Both products use the same paleobathymetry, computed on the Alfonso et al. (2024)
+plate model following the pyBacktrack 1.5 method of Müller et al. (2026),
 as input.  Grids are 0.25 deg lat/lon, present-day grid (no plate
 reconstruction applied for plotting), one NetCDF per Ma from 0 to 170 Ma.
 Variable name in each file: ``z`` (metres of compacted carbonate sediment).

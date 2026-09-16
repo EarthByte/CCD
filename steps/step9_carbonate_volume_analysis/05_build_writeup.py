@@ -190,7 +190,8 @@ def main() -> int:
     sub = doc.add_paragraph()
     sub.alignment = WD_ALIGN_PARAGRAPH.CENTER
     sr = sub.add_run("Dutkiewicz & Müller 2026 vs. Boss & Wilkinson 1991, "
-                     "based on Alfonso et al. 2024 pyBacktrack paleobathymetry")
+                     "on paleobathymetry computed on the Alfonso et al. (2024) plate "
+                     "model following the pyBacktrack 1.5 method of Müller et al. (2026)")
     sr.italic = True
     sr.font.size = Pt(11)
 
@@ -202,8 +203,9 @@ def main() -> int:
         "The depth of the calcite compensation depth (CCD) through time "
         "controls where carbonate sediments accumulate on the seafloor. "
         "We compare two global compacted-carbonate-sediment-thickness "
-        "products built on the same Alfonso et al. (2024) pyBacktrack "
-        "paleobathymetry but using two alternative CCD reconstructions:")
+        "products built on the same paleobathymetry - computed on the "
+        "Alfonso et al. (2024) plate model following the pyBacktrack 1.5 method "
+        "of Müller et al. (2026) - but using two alternative CCD reconstructions:")
 
     bul = doc.add_paragraph(style="List Bullet")
     bul.add_run("DM2026 — the new global CCD curve of Dutkiewicz & Müller "
@@ -419,9 +421,10 @@ def main() -> int:
         "Dutkiewicz, A., and Müller, R.D. (2026). A new global Cenozoic-"
         "Mesozoic calcite compensation depth curve. In preparation.",
         "Müller, R.D., Cannon, J., Williams, S., Dutkiewicz, A., and "
-        "Wright, N.M. (in prep.). pyBacktrack 1.5: gridded "
-        "paleobathymetry, well backstripping and gridded subsidence-rate "
-        "analysis. Geoscientific Model Development.",
+        "Wright, N. (2026). PyBacktrack 1.5: A community tool for "
+        "reconstructing paleobathymetry of drill sites, geohistory and global "
+        "paleobathymetry. EGUsphere [preprint]. "
+        "https://doi.org/10.5194/egusphere-2026-3680",
     ]
     for r in refs:
         doc.add_paragraph(r, style="List Number")

@@ -3,7 +3,8 @@
 Comparison of global compacted-carbonate-sediment-thickness grids produced
 by two alternative CCD curves (Dutkiewicz & Müller 2026, in prep, and Boss
 & Wilkinson 1991), both built on the same Alfonso et al. (2024)
-pyBacktrack paleobathymetry.
+paleobathymetry, computed on that plate model following the pyBacktrack 1.5
+method of Müller et al. (2026).
 
 ## Pipeline
 
