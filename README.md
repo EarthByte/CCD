@@ -203,6 +203,12 @@ grids that step 10 also reads are not redistributed; their sources are given in
 If you use this code or the derived CCD record, please cite the paper and this
 repository (see `CITATION.cff`), and the Zenodo archive for the grids.
 
+Two pieces of Zenodo metadata live here and describe different records.
+`.zenodo.json` at the repository root is what Zenodo reads when it archives a
+GitHub release of this repository, giving that release its own DOI.
+`zenodo/zenodo_metadata.json` describes the separate archive of grids and
+animations, which is too large to live in a repository.
+
 ## Licence
 
 Code is released under the MIT Licence (`LICENSE`). Figures, derived data tables

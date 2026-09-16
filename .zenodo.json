@@ -1,0 +1,26 @@
+{
+  "title": "CCD: global carbonate compensation depth evolution over the last 170 million years and its drivers",
+  "version": "1.0.0",
+  "upload_type": "dataset",
+  "license": "MIT",
+  "access_right": "open",
+  "description": "Workflow, derived data and figures reconstructing the global carbonate compensation depth (CCD) over the last 170 million years and testing its drivers. An area-weighted global CCD is synthesised from Atlantic, Pacific and Indian Ocean records on a single timescale (GTS2020), calibrated against long-term sea level by reduced-major-axis regression, extended to 170 Ma as a hybrid observed/sea-level curve, converted into global carbonate sediment thickness on a plate reconstruction, and used to drive a deep-Earth carbon degassing model. Includes the reconstructed CCD record, the ocean-basin area fractions, the carbonate volume and budget tables, the DSDP/ODP ground-truth comparison at 38 basement sites, the attribution of the CCD to sea level and to solid-Earth carbon fluxes, all figure and animation scripts, and the three supplementary datasets cited by the accompanying manuscript. The reconstructed carbonate sediment thickness grids (minimum, central and maximum sedimentation-rate scenarios), the paleobathymetry grids, the continental masks, the plate model and the rendered animations are archived separately on Zenodo and are not redistributed here, nor are the third-party seafloor-age, spreading-rate, sediment-thickness and crustal-carbon grids read by the carbon-cycle stage.",
+  "keywords": [
+    "carbonate compensation depth",
+    "CCD",
+    "pelagic carbonate",
+    "deep-sea sediment",
+    "sea level",
+    "carbon cycle",
+    "volcanic degassing",
+    "paleobathymetry",
+    "plate tectonic reconstruction",
+    "paleoceanography",
+    "Mesozoic",
+    "Cenozoic"
+  ],
+  "creators": [
+    {"name": "Dutkiewicz, Adriana", "affiliation": "EarthByte Group, School of Geosciences, The University of Sydney, NSW, Australia"},
+    {"name": "Müller, R. Dietmar", "affiliation": "EarthByte Group, School of Geosciences, The University of Sydney, NSW, Australia"}
+  ]
+}
