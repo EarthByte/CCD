@@ -1,4 +1,4 @@
-# Core numeric pipeline (steps 0, 2–6). Install with:  pip install -r requirements.txt
+# Core workflow, steps 1-7 (run_ccd_core.py). Install with:  pip install -r requirements.txt
 numpy>=1.24
 pandas>=2.0
 scipy>=1.10
