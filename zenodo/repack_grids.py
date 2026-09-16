@@ -256,9 +256,13 @@ def main() -> None:
             scratch = Path(td) / "grid.nc"
             for name, folder, files in plan:
                 tar_path = outdir / f"{TARNAME[name]}.tar.gz"
+                # Build beside the existing tarball and swap only on success, so a run
+                # that is interrupted - by a scanner, a full disk, Ctrl-C - cannot leave
+                # a truncated file where a verified one used to be.
+                part = tar_path.with_suffix(tar_path.suffix + ".partial")
                 print(f"\n{name} -> {tar_path.name}")
                 fin = 0
-                with tarfile.open(tar_path, "w:gz") as tar:
+                with tarfile.open(part, "w:gz") as tar:
                     for i, src in enumerate(files, 1):
                         a, raw, err = repack_bytes(src, scratch, args.complevel)
                         info = tarfile.TarInfo(f"{name}/{src.name}")
@@ -270,6 +274,7 @@ def main() -> None:
                             time.sleep(args.pace)
                         if i % 25 == 0 or i == len(files):
                             print(f"  {i:4d}/{len(files)}  {fin/1e6:7.1f} MB read", flush=True)
+                os.replace(part, tar_path)          # atomic; the old file is gone only now
                 fout = tar_path.stat().st_size
                 total_in += fin; total_out += fout
                 print(f"  {fin/1e6:.1f} MB of grids -> {fout/1e6:.1f} MB tarball "
