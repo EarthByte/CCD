@@ -175,14 +175,26 @@ The large grids are archived on Zenodo:
 
 It contains:
 
-- **Paleobathymetry grids**, 170–0 Ma at 1 Myr, on the Alfonso et al. (2025) plate model
-- **Compacted carbonate sediment thickness grids**, 170–0 Ma at 1 Myr (minimum, mean and maximum sedimentation-rate scenarios)
-- **Decompacted carbonate sediment thickness grids**, same coverage
-- the plate model, continental masks and reservoir grids used by steps 8–10
-- the rendered supplementary animations
+- **Carbonate sediment thickness grids**, 170–0 Ma at 1 Myr, as three separate
+  scenarios — minimum, central and maximum carbonate sedimentation rate — each
+  carrying the compacted thickness, the decompacted thickness and the deposition
+  mask at every time step
+- **Paleobathymetry grids**, 170–0 Ma at 1 Myr, which drive the thickness model
+- **Reconstructed continental masks**, matching those times
+- **the plate model** the reconstructions run on
+- **the present-day carbonate thickness grids** used for validation (also in `data/`)
+- **the two supplementary animations**, each rendered forward and backward in time
+
+All grids are global NetCDF at 0.25°, in reconstructed (paleo) coordinates.
+`zenodo/README_zenodo.md` is the archive's own README and describes every file,
+what the three scenarios mean and how to use them; `zenodo/make_zenodo_archive.sh`
+builds the archive from a working tree and writes a checksummed manifest.
 
 Download the archive and place its contents at the paths given in
-`pipeline_carbon/config.sh` before running steps 8–10.
+`pipeline_carbon/config.sh` before running steps 8–10. The third-party
+seafloor-age, spreading-rate, sediment-thickness, crustal-carbon and reservoir
+grids that step 10 also reads are not redistributed; their sources are given in
+`steps/step10_carbon_cycle_degassing/`.
 
 ---
 
