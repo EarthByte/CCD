@@ -270,7 +270,7 @@ def build_s2() -> Path:
 
     write_readme(wb.active, "Supplementary Dataset S2 — Deep-Earth carbon-cycle model results", [
         "Dutkiewicz & Müller — recomputed by driving the Müller et al. (2024) degassing model with the new global CCD",
-        "on the Alfonso et al. (2025) plate model.",
+        "on the Alfonso et al. (2024) plate model.",
         "",
         "Contents:",
         "  • Atmospheric outflux by source — solid-Earth CO2 degassing to the atmosphere, separated by reservoir,",

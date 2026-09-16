@@ -6,7 +6,7 @@ Mollweide projection, coloured with the SAME palette as Figure 3
 (data/carbonate_thickness_roma_pale.cpt), with GPlately-reconstructed
 plate boundaries (black + white halo), subduction teeth, gray continental
 polygons + thin coastlines. The carbonate-thickness grids are already in
-Alfonso et al. (2025) palaeo-coordinates at each Ma, so they are plotted
+Alfonso et al. (2024) palaeo-coordinates at each Ma, so they are plotted
 directly (no raster reconstruction); only the vector overlays are
 reconstructed to each frame's age.
 

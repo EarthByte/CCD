@@ -8,7 +8,7 @@ shallowest), matching the pyBacktrack paleobathymetry-video template. Same
 GPlately overlays as the carbonate video: reconstructed plate boundaries
 (black + white halo), subduction teeth, gray continental polygons + thin
 coastlines. NaN cells are gray (matching the template's NAN colour). The
-paleobathymetry grids are already in Alfonso et al. (2025) palaeo-coordinates.
+paleobathymetry grids are already in Alfonso et al. (2024) palaeo-coordinates.
 
 Usage:
     python3 make_paleobathymetry_video.py                 # 0-170 Ma, 1 Myr, 8 fps

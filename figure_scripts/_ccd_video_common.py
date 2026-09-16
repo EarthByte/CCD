@@ -5,7 +5,7 @@ Shared helpers for the two CCD-project supplementary videos
 projection with GPlately-reconstructed plate boundaries, subduction
 teeth, gray continents and thin coastlines.
 
-The netCDF grids are ALREADY reconstructed into Alfonso et al. (2025)
+The netCDF grids are ALREADY reconstructed into Alfonso et al. (2024)
 palaeo-coordinates at each Ma, so they are plotted as-is (no raster
 reconstruction) with the vector overlays reconstructed to the same age.
 Longitude convention differs between products, though: carbonate thickness
