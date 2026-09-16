@@ -275,8 +275,8 @@ def build_s2() -> Path:
         "Contents:",
         "  • Atmospheric outflux by source — solid-Earth CO2 degassing to the atmosphere, separated by reservoir,",
         "    plus the gross atmospheric outflux.",
-        "  • Plate influx by reservoir — carbon carried into the plate / sequestered, separated by reservoir,",
-        "    plus the gross (total) plate influx.",
+        "  • Plate influx by reservoir — carbon carried down on the subducting plate, separated by reservoir,",
+        "    plus their total.",
         "  • Net atmospheric flux — gross atmospheric outflux minus gross plate influx, in two versions:",
         "    excluding and including the growing pelagic (deep-sea) carbonate-sediment reservoir in the storage term.",
         "",
@@ -287,7 +287,10 @@ def build_s2() -> Path:
         "  • Net atmospheric flux positive = net CO2 to the atmosphere.",
         "  • min / mean / max span the model's parameter-uncertainty envelope.",
         "  • Rift outflux uses the 'biased-rift' formulation (consistent with the gross outflux reported here).",
-        "  • Serpentinite = total (bending-related + mid-ocean-ridge) serpentinite carbon.",
+        "  • Plate influx covers pelagic carbonate sediment and altered oceanic crust, and the total is",
+        "    their sum. Serpentinite carbon is mantle-derived and returns to the mantle rather than",
+        "    representing a sink of surface carbon, so it is excluded, as is organic carbon; neither",
+        "    enters the attribution behind Figure 4.",
         "",
         "Sources (files in the CCD_workflow_clean repository, steps/step10_carbon_cycle_degassing/",
         "Alfonso_etal_2024_DM26/Outputs):",
@@ -314,10 +317,21 @@ def build_s2() -> Path:
     pl = pd.read_csv(_record("Plate influx", PLATE), index_col=0, header=[0, 1])
     pl.index = pd.to_numeric(pl.index, errors="coerce")
     pl = pl[np.isfinite(pl.index)]
-    pgroups = [("Pelagic carbonate sediment", "sediments"), ("Altered oceanic crust", "crust"),
-               ("Serpentinite (total)", "serpentinite_total"),
-               ("Organic sediments", "organic_sediments"), ("Gross plate influx", "total_influx")]
-    cols = [pl.index.to_numpy(float)] + [c for _, stem in pgroups for c in _mi_triplet(pl, stem)]
+    # Serpentinite and organic carbon are out of this sheet. Serpentinite carbon sits in
+    # serpentinised mantle lithosphere: it is mantle-derived and returns to the mantle,
+    # so it is not a sink of surface carbon, and the attribution behind Figure 4 already
+    # excludes it. Neither species is discussed in the paper.
+    #
+    # The total is therefore computed here from the two columns the sheet shows, rather
+    # than read from the model's `total_influx`. That column also carried mantle
+    # lithosphere, serpentinite and organic carbon - together 23% of it - none of which
+    # appeared in the sheet, so the printed columns never summed to the printed total.
+    pgroups = [("Pelagic carbonate sediment", "sediments"), ("Altered oceanic crust", "crust")]
+    _tot = [sum(t) for t in zip(_mi_triplet(pl, "sediments"), _mi_triplet(pl, "crust"))]
+    pgroups = pgroups + [("Total plate influx", None)]
+    cols = ([pl.index.to_numpy(float)]
+            + [c for _, stem in pgroups[:-1] for c in _mi_triplet(pl, stem)]
+            + list(_tot))
     write_table(wb.create_sheet("Plate influx"), ["Age (Ma)"],
                 list(map(list, zip(*cols))), [10] + [11] * (len(cols) - 1),
                 ["General"] + ["0.000"] * (len(cols) - 1),
