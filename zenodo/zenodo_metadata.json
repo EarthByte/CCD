@@ -3,8 +3,14 @@
     "upload_type": "dataset",
     "title": "Global carbonate compensation depth evolution over the last 170 million years and its drivers — model grids and animations",
     "creators": [
-      { "name": "Dutkiewicz, Adriana", "affiliation": "EarthByte Group, School of Geosciences, The University of Sydney" },
-      { "name": "Müller, R. Dietmar", "affiliation": "EarthByte Group, School of Geosciences, The University of Sydney" }
+      {
+        "name": "Dutkiewicz, Adriana",
+        "affiliation": "EarthByte Group, School of Geosciences, The University of Sydney"
+      },
+      {
+        "name": "Müller, R. Dietmar",
+        "affiliation": "EarthByte Group, School of Geosciences, The University of Sydney"
+      }
     ],
     "description": "<p>Reconstructed grids and animations supporting Dutkiewicz and M&uuml;ller, <em>Global carbonate compensation depth evolution over the last 170 million years and its drivers</em>.</p><p>The archive holds compacted and decompacted pelagic carbonate sediment thickness grids and their deposition masks at 1 Myr from 170 Ma to the present, under minimum, central and maximum carbonate sedimentation-rate scenarios; the merged paleobathymetry grids that drive them; the reconstructed continental masks; the plate model the reconstructions run on; the observed present-day carbonate thickness grids used for validation; and the two supplementary animations. All grids are global NetCDF at 0.25 degrees, in reconstructed (paleo) coordinates.</p><p>README.md in the archive describes every file, the three scenarios and how to use the grids with the analysis code. MANIFEST.txt carries a SHA-256 checksum for every file.</p><p>The code that produces these grids, the derived CCD curves, the figures and the supplementary datasets are at https://github.com/EarthByte/CCD.</p>",
     "access_right": "open",
@@ -22,9 +28,14 @@
       "Cenozoic"
     ],
     "related_identifiers": [
-      { "identifier": "https://github.com/EarthByte/CCD", "relation": "isSupplementTo", "resource_type": "software" }
+      {
+        "identifier": "https://github.com/EarthByte/CCD",
+        "relation": "isSupplementTo",
+        "resource_type": "software"
+      }
     ],
     "language": "eng",
-    "version": "1.0.0"
+    "version": "1.0.0",
+    "doi": "10.5281/zenodo.22785465"
   }
 }

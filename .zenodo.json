@@ -20,7 +20,21 @@
     "Cenozoic"
   ],
   "creators": [
-    {"name": "Dutkiewicz, Adriana", "affiliation": "EarthByte Group, School of Geosciences, The University of Sydney, NSW, Australia"},
-    {"name": "Müller, R. Dietmar", "affiliation": "EarthByte Group, School of Geosciences, The University of Sydney, NSW, Australia"}
+    {
+      "name": "Dutkiewicz, Adriana",
+      "affiliation": "EarthByte Group, School of Geosciences, The University of Sydney, NSW, Australia"
+    },
+    {
+      "name": "Müller, R. Dietmar",
+      "affiliation": "EarthByte Group, School of Geosciences, The University of Sydney, NSW, Australia"
+    }
+  ],
+  "related_identifiers": [
+    {
+      "identifier": "10.5281/zenodo.22785465",
+      "relation": "isSupplementedBy",
+      "resource_type": "dataset",
+      "scheme": "doi"
+    }
   ]
 }

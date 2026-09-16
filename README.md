@@ -171,7 +171,7 @@ fractions and the present-day carbonate-thickness validation grids — are in
 
 The large grids are archived on Zenodo:
 
-> **Zenodo archive:** *DOI to be assigned* — `https://doi.org/10.5281/zenodo.XXXXXXX`
+> **Zenodo archive:** https://doi.org/10.5281/zenodo.22785465
 
 It contains:
 
@@ -191,7 +191,16 @@ what the three scenarios mean and how to use them; `zenodo/make_zenodo_archive.s
 builds the archive from a working tree and writes a checksummed manifest.
 
 Download the archive and place its contents at the paths given in
-`pipeline_carbon/config.sh` before running steps 8–10. The third-party
+`pipeline_carbon/config.sh` before running steps 8–10. The step-10 notebooks read the
+same grids through environment variables, so nothing in them is tied to one
+machine:
+
+| Variable | Points at | Default |
+|----------|-----------|---------|
+| `CCD_SOURCE_DATA` | the unpacked grids, holding `CarbonateThickness/` and `Paleobathymetry/` | `source_data` |
+| `CCD_PLATE_MODEL_ROOT` | the folder containing `Alfonso_etal_2024_modClennettMuller/` | `.` |
+| `CCD_MASK_ROOT` | the continental-mask collections | `continent_masks` |
+| `CCD_SUBDUCTED_WATER` | the Cao et al. (2024) subducted-water grids, a separate dataset | `subducted_water` | The third-party
 seafloor-age, spreading-rate, sediment-thickness, crustal-carbon and reservoir
 grids that step 10 also reads are not redistributed; their sources are given in
 `steps/step10_carbon_cycle_degassing/`.

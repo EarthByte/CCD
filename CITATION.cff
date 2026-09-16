@@ -21,3 +21,13 @@ preferred-citation:
       given-names: R. Dietmar
   journal: Geology
   year: 2026
+references:
+  - type: dataset
+    title: "Global carbonate compensation depth evolution over the last 170 million years and its drivers — model grids and animations"
+    authors:
+      - family-names: Dutkiewicz
+        given-names: Adriana
+      - family-names: Müller
+        given-names: R. Dietmar
+    doi: 10.5281/zenodo.22785465
+    year: 2026

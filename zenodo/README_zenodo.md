@@ -3,6 +3,8 @@
 Dutkiewicz, A., and Müller, R.D.
 EarthByte Group, School of Geosciences, The University of Sydney
 
+**DOI:** https://doi.org/10.5281/zenodo.22785465
+
 This archive holds the reconstructed grids and animations behind the paper. The
 code that produces them, the derived curves, the figures and the supplementary
 datasets are in the companion repository:
@@ -171,7 +173,7 @@ paper, this archive, and the plate model:
 
 > Dutkiewicz, A., and Müller, R.D. *Global carbonate compensation depth evolution
 > over the last 170 million years and its drivers — model grids and animations.*
-> Zenodo.
+> Zenodo, https://doi.org/10.5281/zenodo.22785465
 
 The carbonate sediment thickness model follows the method of Dutkiewicz, A.,
 Müller, R.D., Cannon, J., Vaughan, S. and Zahirovic, S., 2019, Sequestration and
