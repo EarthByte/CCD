@@ -288,9 +288,10 @@ def build_s2() -> Path:
         "  • min / mean / max span the model's parameter-uncertainty envelope.",
         "  • Rift outflux uses the 'biased-rift' formulation (consistent with the gross outflux reported here).",
         "  • Plate influx covers pelagic carbonate sediment and altered oceanic crust, and the total is",
-        "    their sum. Serpentinite carbon is mantle-derived and returns to the mantle rather than",
-        "    representing a sink of surface carbon, so it is excluded, as is organic carbon; neither",
-        "    enters the attribution behind Figure 4.",
+        "    their sum. Serpentinite and mantle lithosphere carbon are mantle-derived and return to the",
+        "    mantle rather than representing a sink of surface carbon, so both are excluded, as is",
+        "    organic carbon. None of the three enters the attribution behind Figure 4, whose",
+        "    biological sink is pelagic sediment plus altered oceanic crust.",
         "",
         "Sources (files in the CCD_workflow_clean repository, steps/step10_carbon_cycle_degassing/",
         "Alfonso_etal_2024_DM26/Outputs):",
@@ -322,9 +323,11 @@ def build_s2() -> Path:
     # so it is not a sink of surface carbon, and the attribution behind Figure 4 already
     # excludes it. Neither species is discussed in the paper.
     #
+    # Mantle lithosphere goes with them, for the same reason and by the same decision.
+    #
     # The total is therefore computed here from the two columns the sheet shows, rather
     # than read from the model's `total_influx`. That column also carried mantle
-    # lithosphere, serpentinite and organic carbon - together 23% of it - none of which
+    # lithosphere (12.1%), serpentinite (7.2%) and organic carbon (3.6%), none of which
     # appeared in the sheet, so the printed columns never summed to the printed total.
     pgroups = [("Pelagic carbonate sediment", "sediments"), ("Altered oceanic crust", "crust")]
     _tot = [sum(t) for t in zip(_mi_triplet(pl, "sediments"), _mi_triplet(pl, "crust"))]
